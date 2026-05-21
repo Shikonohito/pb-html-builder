@@ -10,6 +10,9 @@
   --accent-2: #4cc9f0;
   --code-bg: #08090d;
   --code-text: #fff2b8;
+  --inline-code-bg: color-mix(in srgb, #047891 30%, #111318);
+  --inline-code-text: color-mix(in srgb, #047891 14%, #ffffff);
+  --inline-code-border: color-mix(in srgb, #047891 48%, #3b414c);
   --feedback-correct: #3ddc97;
   --feedback-incorrect: #ff8a8a;
   --status-pending: #ffb703;
@@ -49,6 +52,9 @@ body.theme-light {
   --accent-2: #047891;
   --code-bg: #111318;
   --code-text: #fff2b8;
+  --inline-code-bg: color-mix(in srgb, var(--accent-2) 14%, #ffffff);
+  --inline-code-text: #0f4f63;
+  --inline-code-border: color-mix(in srgb, var(--accent-2) 32%, var(--line));
   --feedback-correct: #126c43;
   --feedback-incorrect: #b42318;
   --status-pending: #b77900;
@@ -426,8 +432,10 @@ a {
 
 .task-section code {
   padding: 0.12em 0.34em;
+  border: 1px solid var(--inline-code-border);
   border-radius: 5px;
-  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+  background: var(--inline-code-bg);
+  color: var(--inline-code-text);
   font-size: 0.95em;
 }
 

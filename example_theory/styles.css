@@ -11,6 +11,9 @@
   --quiz-accent: #b892ff;
   --code-bg: #08090d;
   --code-text: #fff2b8;
+  --inline-code-bg: color-mix(in srgb, #047891 30%, #111318);
+  --inline-code-text: color-mix(in srgb, #047891 14%, #ffffff);
+  --inline-code-border: color-mix(in srgb, #047891 48%, #3b414c);
   --feedback-correct: #3ddc97;
   --feedback-incorrect: #ff8a8a;
   --shadow: 0 20px 52px rgba(0, 0, 0, 0.32);
@@ -50,6 +53,9 @@ body.theme-light {
   --quiz-accent: #7c3aed;
   --code-bg: #111318;
   --code-text: #fff2b8;
+  --inline-code-bg: color-mix(in srgb, var(--accent-2) 14%, #ffffff);
+  --inline-code-text: #0f4f63;
+  --inline-code-border: color-mix(in srgb, var(--accent-2) 32%, var(--line));
   --feedback-correct: #126c43;
   --feedback-incorrect: #b42318;
   --shadow: 0 18px 46px rgba(51, 43, 32, 0.13);
@@ -380,7 +386,10 @@ a {
 
 .lesson-section code {
   padding: 0.12em 0.34em;
+  border: 1px solid var(--inline-code-border);
   border-radius: 5px;
+  background: var(--inline-code-bg);
+  color: var(--inline-code-text);
   font-size: 0.95em;
 }
 
@@ -395,6 +404,7 @@ pre {
 
 pre code {
   padding: 0;
+  border: 0;
   background: transparent;
   color: inherit;
 }
