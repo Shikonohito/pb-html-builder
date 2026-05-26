@@ -8,6 +8,7 @@ const quizOptions = document.querySelectorAll(".quiz-option");
 const quizInputForms = document.querySelectorAll(".quiz-input-form");
 const codeLabs = document.querySelectorAll("[data-code-lab]");
 const codeViewers = document.querySelectorAll("[data-code-viewer]");
+const inlineCodeBlocks = document.querySelectorAll(".lesson-section code");
 const mobileSidebarQuery = window.matchMedia("(max-width: 820px)");
 const sectionById = new Map(Array.from(lessonSections, (section) => [section.id, section]));
 const copyIconSvg = `
@@ -389,16 +390,13 @@ function setCopyButtonCopied(copyButton) {
   }, 1200);
 }
 
-async function copyCode(copyButton) {
-  const code = getCopyButtonCode(copyButton);
-
+async function copyTextToClipboard(text) {
   try {
-    await navigator.clipboard.writeText(code);
-    setCopyButtonCopied(copyButton);
+    await navigator.clipboard.writeText(text);
   } catch {
     const copyArea = document.createElement("textarea");
 
-    copyArea.value = code;
+    copyArea.value = text;
     copyArea.setAttribute("readonly", "");
     copyArea.style.position = "fixed";
     copyArea.style.inset = "0 auto auto 0";
@@ -407,8 +405,57 @@ async function copyCode(copyButton) {
     copyArea.select();
     document.execCommand("copy");
     copyArea.remove();
-    setCopyButtonCopied(copyButton);
   }
+}
+
+async function copyCode(copyButton) {
+  const code = getCopyButtonCode(copyButton);
+
+  await copyTextToClipboard(code);
+  setCopyButtonCopied(copyButton);
+}
+
+function setInlineCodeCopied(codeBlock) {
+  window.clearTimeout(codeBlock.copyFeedbackTimeout);
+  codeBlock.classList.add("is-copied");
+  codeBlock.setAttribute("aria-label", "Copied");
+
+  codeBlock.copyFeedbackTimeout = window.setTimeout(() => {
+    codeBlock.classList.remove("is-copied");
+    codeBlock.setAttribute("aria-label", `Copy inline code: ${codeBlock.textContent.trim()}`);
+  }, 1200);
+}
+
+async function copyInlineCode(codeBlock) {
+  await copyTextToClipboard(codeBlock.textContent.trim());
+  setInlineCodeCopied(codeBlock);
+}
+
+function initInlineCodeCopy(codeBlock) {
+  if (codeBlock.closest("pre") || codeBlock.closest(".code-editor-frame")) {
+    return;
+  }
+
+  codeBlock.classList.add("inline-copy-code");
+  codeBlock.setAttribute("role", "button");
+  codeBlock.setAttribute("tabindex", "0");
+  codeBlock.setAttribute("aria-label", `Copy inline code: ${codeBlock.textContent.trim()}`);
+
+  codeBlock.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    copyInlineCode(codeBlock);
+  });
+
+  codeBlock.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    copyInlineCode(codeBlock);
+  });
 }
 
 async function runCodeLab(lab) {
@@ -577,6 +624,8 @@ codeLabs.forEach((lab) => {
 document.querySelectorAll(".copy-code-button").forEach((copyButton) => {
   copyButton.addEventListener("click", () => copyCode(copyButton));
 });
+
+inlineCodeBlocks.forEach(initInlineCodeCopy);
 
 if (codeLabs.length || codeViewers.length) {
   getMonaco()

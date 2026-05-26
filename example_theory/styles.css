@@ -408,12 +408,52 @@ a {
 }
 
 .lesson-section code {
+  position: relative;
   padding: 0.12em 0.34em;
   border: 1px solid var(--inline-code-border);
   border-radius: 5px;
   background: var(--inline-code-bg);
   color: var(--inline-code-text);
   font-size: 0.95em;
+}
+
+.lesson-section code.inline-copy-code {
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.lesson-section code.inline-copy-code:hover {
+  border-color: color-mix(in srgb, var(--accent-2) 70%, var(--inline-code-border));
+}
+
+.lesson-section code.inline-copy-code:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-2) 72%, transparent);
+  outline-offset: 3px;
+}
+
+.lesson-section code.inline-copy-code.is-copied {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-2) 18%, transparent);
+}
+
+.lesson-section code.inline-copy-code.is-copied::after {
+  content: "Copied";
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: calc(100% + 7px);
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent-2) 42%, var(--line));
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
 }
 
 pre {
