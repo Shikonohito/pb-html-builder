@@ -165,7 +165,7 @@ quizInputForms.forEach((form) => {
     const input = form.querySelector(".quiz-input");
     const feedback = form.querySelector(".quiz-feedback");
     const acceptedAnswers = form.dataset.answer.split("|").map((answer) => answer.trim().toLowerCase());
-    const userAnswer = input.value.trim().toLowerCase();
+    const userAnswer = input.value.trim();
     const isCorrect = acceptedAnswers.includes(userAnswer);
 
     feedback.textContent = isCorrect

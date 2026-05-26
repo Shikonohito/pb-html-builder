@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Python Theory Notes</title>
+    <title>File title</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -15,8 +15,8 @@
         </button>
 
         <div class="topic-title">
-          <span class="topic-kicker">Python</span>
-          <h1>Функции и область видимости</h1>
+          <span class="topic-kicker">Python Bootcamp</span>
+          <h1>Название урока</h1>
         </div>
 
         <button class="theme-toggle" id="themeToggle" aria-label="Включить светлый вариант" aria-pressed="false">
@@ -33,21 +33,21 @@
         </div>
 
         <nav class="toc-list" aria-label="Темы курса">
-          <a class="toc-item current" href="#functions">
+          <a class="toc-item current" href="#heading01">
             <span>01</span>
-            Функции
+            Заголовок
           </a>
-          <a class="toc-item" href="#arguments">
+          <a class="toc-item" href="#heading02">
             <span>02</span>
-            Аргументы
+            Заголовок
           </a>
-          <a class="toc-item" href="#scope">
+          <a class="toc-item" href="#heading03">
             <span>03</span>
-            Область видимости
+            Заголовок
           </a>
-          <a class="toc-item" href="#lambda">
+          <a class="toc-item" href="#heading04">
             <span>04</span>
-            Lambda
+            Заголовок
           </a>
         </nav>
 
@@ -58,71 +58,66 @@
         <section class="section-map" aria-labelledby="sectionsTitle">
           <div>
             <span class="eyebrow">Разделы темы</span>
-            <h2 id="sectionsTitle">Что важно разобрать</h2>
+            <h2 id="sectionsTitle">Карта секций</h2>
           </div>
 
           <div class="section-grid">
-            <a href="#functions">Определение функций</a>
-            <a href="#arguments">Параметры и значения</a>
-            <a href="#scope">LEGB-правило</a>
-            <a href="#lambda">Анонимные функции</a>
+            <a href="#definitionTitle">Заголовок</a>
+            <a href="#correctTitle">Заголовок</a>
+            <a href="#heading01">Заголовок</a>
+            <a href="#heading02">Заголовок</a>
+            <a href="#heading03">Заголовок</a>
+            <a href="#heading04">Заголовок</a>
           </div>
         </section>
 
         <article class="lesson">
-          <section id="functions" class="lesson-section">
+          <section id="heading01" class="lesson-section">
             <div class="section-heading">
               <span>01</span>
-              <h2>Функции</h2>
+              <h2>Заголовок</h2>
             </div>
             <p>
-              Функция в Python — именованный блок кода, который выполняет одну логическую задачу.
-              Она помогает убрать повторение, разделить программу на понятные части и описывать
-              действия через имена.
+                Текст.
             </p>
 
-            <div class="theory-block theory-block-definition" aria-labelledby="functionDefinitionTitle">
-              <div class="theory-block-label">Определение термина</div>
-              <h3 id="functionDefinitionTitle">Функция</h3>
+            <div class="block block-definition" aria-labelledby="definitionTitle">
+              <div class="block-label">Определение термина</div>
+              <h3 id="definitionTitle">Заголовок</h3>
               <p>
-                Это переиспользуемый фрагмент программы с именем, входными данными и результатом.
-                В Python функция создается через <code>def</code>, а вызывается по имени со скобками.
+                Текст. <code>Текст с inline code.</code>
               </p>
             </div>
 
-            <div class="theory-block theory-block-important" aria-labelledby="functionImportantTitle">
-              <div class="theory-block-label">Важный момент</div>
-              <h3 id="functionImportantTitle">Одна функция - одна понятная задача</h3>
+            <div class="block block-important" aria-labelledby="importantTitle">
+              <div class="block-label">Важный момент</div>
+              <h3 id="importantTitle">Заголовок</h3>
               <p>
-                Если функция одновременно читает данные, считает результат и печатает отчет,
-                ее сложнее проверять и менять. Лучше разделять такие действия на несколько функций.
+                  Текст.
               </p>
             </div>
 
-            <div class="theory-block theory-block-hint" aria-labelledby="functionHintTitle">
-              <div class="theory-block-label">Подсказка</div>
-              <h3 id="functionHintTitle">Называйте функцию действием</h3>
+            <div class="block block-hint" aria-labelledby="hintTitle">
+              <div class="block-label">Подсказка</div>
+              <h3 id="hintTitle">Заголовок</h3>
               <p>
-                Имя вроде <code>calculate_total()</code> или <code>format_name()</code> сразу
-                объясняет, что делает код, поэтому вызов функции читается почти как предложение.
+                  Текст.
               </p>
             </div>
 
-            <div class="theory-block theory-block-correct" aria-labelledby="functionCorrectTitle">
-              <div class="theory-block-label">Верный подход</div>
-              <h3 id="functionCorrectTitle">Возвращайте значение через <code>return</code></h3>
+            <div class="block block-correct" aria-labelledby="correctTitle">
+              <div class="block-label">Верный подход</div>
+              <h3 id="correctTitle">Заголовок с <code>inline code</code></h3>
               <p>
-                Когда функция возвращает результат, его можно сохранить, проверить в тесте или
-                передать в другую функцию без привязки к выводу на экран.
+                  Текст.
               </p>
             </div>
 
-            <div class="theory-block theory-block-incorrect" aria-labelledby="functionIncorrectTitle">
-              <div class="theory-block-label">Неверный подход</div>
-              <h3 id="functionIncorrectTitle">Не прячьте результат только в <code>print()</code></h3>
+            <div class="block block-incorrect" aria-labelledby="incorrectTitle">
+              <div class="block-label">Неверный подход</div>
+              <h3 id="incorrectTitle">Заголовок</h3>
               <p>
-                <code>print()</code> показывает текст пользователю, но не возвращает данные в программу.
-                Из-за этого результат сложнее использовать повторно.
+                  Текст.
               </p>
             </div>
 
@@ -137,12 +132,11 @@
               </div>
               <div class="code-editor code-viewer" data-code-viewer aria-label="Пример Python-кода"></div>
             </div>
-            <textarea class="code-source" aria-label="Исходный код примера">def greet(name):
-    return f"Привет, {name}"</textarea>
+            <textarea class="code-source" aria-label="Исходный код примера">print()</textarea>
 
             <div class="code-lab" data-code-lab>
               <div class="code-lab-head">
-                <h3>Проверь функцию</h3>
+                <h3>Заголовок</h3>
               </div>
               <div class="code-editor-frame">
                 <div class="code-lab-actions">
@@ -160,29 +154,23 @@
                 </div>
                 <div class="code-editor" aria-label="Редактор Python-кода" data-readonly="true"></div>
               </div>
-              <textarea class="code-source" aria-label="Исходный код Python">def greet(name):
-    return f"Привет, {name}"
-
-name = input("Введите имя: ")
-print(greet(name))</textarea>
+              <textarea class="code-source" aria-label="Исходный код Python">print("test")</textarea>
               <div class="code-output" aria-live="polite"></div>
             </div>
           </section>
 
-          <section id="arguments" class="lesson-section">
+          <section id="heading02" class="lesson-section">
             <div class="section-heading">
               <span>02</span>
-              <h2>Аргументы</h2>
+              <h2>Заголовок</h2>
             </div>
             <p>
-              Аргументы передают функции данные. В Python можно использовать позиционные аргументы,
-              именованные аргументы, значения по умолчанию, а также сбор произвольного количества
-              значений через <code>*args</code> и <code>**kwargs</code>.
+                Текст.
             </p>
 
-            <div class="quiz-block" aria-labelledby="argumentsQuizTitle">
-              <div class="quiz-label">Вопрос по теме аргументов</div>
-              <h3 id="argumentsQuizTitle">Что будет аргументом при вызове функции?</h3>
+            <div class="quiz-block" aria-labelledby="quizTitle">
+              <div class="quiz-label">Вопрос с одним ответом</div>
+              <h3 id="quizTitle">Текст вопроса.</h3>
               <div class="code-editor-frame">
                 <div class="code-lab-actions">
                   <button type="button" class="copy-code-button" aria-label="Скопировать код">
@@ -194,10 +182,7 @@ print(greet(name))</textarea>
                 </div>
                 <div class="code-editor code-viewer" data-code-viewer aria-label="Пример Python-кода"></div>
               </div>
-              <textarea class="code-source" aria-label="Исходный код примера">def show_city(city):
-    return city
-
-show_city("Баку")</textarea>
+              <textarea class="code-source" aria-label="Исходный код примера">print()</textarea>
 
               <div class="quiz-options" role="group" aria-label="Варианты ответа">
                 <div class="quiz-choice">
@@ -205,10 +190,10 @@ show_city("Баку")</textarea>
                     type="button"
                     class="quiz-option"
                     data-correct="false"
-                    data-feedback="Неверно: city здесь параметр. Параметр стоит в определении функции и принимает переданное значение."
+                    data-feedback="Описание причины."
                     aria-pressed="false"
                   >
-                    <code>city</code> в строке <code>def show_city(city):</code>
+                      Вариант ответа
                   </button>
                   <p class="quiz-feedback" aria-live="polite"></p>
                 </div>
@@ -217,10 +202,10 @@ show_city("Баку")</textarea>
                     type="button"
                     class="quiz-option"
                     data-correct="true"
-                    data-feedback="Верно: &quot;Баку&quot; - это аргумент, потому что это значение передают функции при вызове."
+                    data-feedback="Описание причины."
                     aria-pressed="false"
                   >
-                    <code>"Баку"</code> в строке <code>show_city("Баку")</code>
+                    Вариант ответа с <code>inline code</code>
                   </button>
                   <p class="quiz-feedback" aria-live="polite"></p>
                 </div>
@@ -229,10 +214,10 @@ show_city("Баку")</textarea>
                     type="button"
                     class="quiz-option"
                     data-correct="false"
-                    data-feedback="Неверно: show_city - это имя функции, а не данные, которые передают внутрь функции."
+                    data-feedback="Описание причины."
                     aria-pressed="false"
                   >
-                    Имя функции <code>show_city</code>
+                      Вариант ответа
                   </button>
                   <p class="quiz-feedback" aria-live="polite"></p>
                 </div>
@@ -241,19 +226,19 @@ show_city("Баку")</textarea>
                     type="button"
                     class="quiz-option"
                     data-correct="false"
-                    data-feedback="Неверно: return возвращает результат из функции, но не является аргументом вызова."
+                    data-feedback="Описание причины."
                     aria-pressed="false"
                   >
-                    Ключевое слово <code>return</code>
+                      Вариант ответа
                   </button>
                   <p class="quiz-feedback" aria-live="polite"></p>
                 </div>
               </div>
             </div>
 
-            <div class="quiz-block" data-quiz-mode="multiple" aria-labelledby="argumentsMultiQuizTitle">
+            <div class="quiz-block" data-quiz-mode="multiple" aria-labelledby="multiQuizTitle">
               <div class="quiz-label">Вопрос с несколькими ответами</div>
-              <h3 id="argumentsMultiQuizTitle">Какие значения являются аргументами при вызове функции?</h3>
+              <h3 id="multiQuizTitle">Текст вопроса.</h3>
               <div class="code-editor-frame">
                 <div class="code-lab-actions">
                   <button type="button" class="copy-code-button" aria-label="Скопировать код">
@@ -265,10 +250,7 @@ show_city("Баку")</textarea>
                 </div>
                 <div class="code-editor code-viewer" data-code-viewer aria-label="Пример Python-кода"></div>
               </div>
-              <textarea class="code-source" aria-label="Исходный код примера">def greet(name, greeting="Привет"):
-    return f"{greeting}, {name}"
-
-greet("Али", greeting="Салам")</textarea>
+              <textarea class="code-source" aria-label="Исходный код примера">print()</textarea>
 
               <div class="quiz-options" role="group" aria-label="Варианты ответа с несколькими верными ответами">
                 <div class="quiz-choice">
@@ -276,10 +258,10 @@ greet("Али", greeting="Салам")</textarea>
                     type="button"
                     class="quiz-option"
                     data-correct="true"
-                    data-feedback="Верно: &quot;Али&quot; передают в функцию при вызове, поэтому это аргумент."
+                    data-feedback="Описание причины."
                     aria-pressed="false"
                   >
-                    <code>"Али"</code>
+                      Вариант ответа
                   </button>
                   <p class="quiz-feedback" aria-live="polite"></p>
                 </div>
@@ -288,10 +270,10 @@ greet("Али", greeting="Салам")</textarea>
                     type="button"
                     class="quiz-option"
                     data-correct="true"
-                    data-feedback="Верно: greeting=&quot;Салам&quot; - именованный аргумент в вызове функции."
+                    data-feedback="Описание причины."
                     aria-pressed="false"
                   >
-                    <code>greeting="Салам"</code>
+                      Вариант ответа
                   </button>
                   <p class="quiz-feedback" aria-live="polite"></p>
                 </div>
@@ -300,10 +282,10 @@ greet("Али", greeting="Салам")</textarea>
                     type="button"
                     class="quiz-option"
                     data-correct="false"
-                    data-feedback="Неверно: name - это параметр в определении функции, а не аргумент вызова."
+                    data-feedback="Описание причины."
                     aria-pressed="false"
                   >
-                    <code>name</code>
+                      Вариант ответа
                   </button>
                   <p class="quiz-feedback" aria-live="polite"></p>
                 </div>
@@ -312,10 +294,10 @@ greet("Али", greeting="Салам")</textarea>
                     type="button"
                     class="quiz-option"
                     data-correct="false"
-                    data-feedback="Неверно: &quot;Привет&quot; - значение по умолчанию в определении функции. При этом вызове его заменяет аргумент &quot;Салам&quot;."
+                    data-feedback="Описание причины."
                     aria-pressed="false"
                   >
-                    <code>"Привет"</code>
+                      Вариант ответа
                   </button>
                   <p class="quiz-feedback" aria-live="polite"></p>
                 </div>
@@ -323,20 +305,18 @@ greet("Али", greeting="Салам")</textarea>
             </div>
           </section>
 
-          <section id="scope" class="lesson-section">
+          <section id="heading03" class="lesson-section">
             <div class="section-heading">
               <span>03</span>
-              <h2>Область видимости</h2>
+              <h2>Заголовок</h2>
             </div>
             <p>
-              При поиске имени Python следует правилу LEGB: Local, Enclosing, Global, Built-in.
-              Это объясняет, почему переменная внутри функции не всегда совпадает с переменной
-              с тем же именем в модуле.
+                Текст.
             </p>
 
-            <div class="quiz-block" aria-labelledby="scopeInputQuizTitle">
-              <div class="quiz-label">Вопрос с вводом ответа</div>
-              <h3 id="scopeInputQuizTitle">В какой области видимости Python сначала ищет переменную <code>message</code>?</h3>
+            <div class="quiz-block" aria-labelledby="inputQuizTitle">
+              <div class="quiz-label">Открытый вопрос</div>
+              <h3 id="inputQuizTitle">Текст вопроса с <code>inline code</code></h3>
               <div class="code-editor-frame">
                 <div class="code-lab-actions">
                   <button type="button" class="copy-code-button" aria-label="Скопировать код">
@@ -348,14 +328,10 @@ greet("Али", greeting="Салам")</textarea>
                 </div>
                 <div class="code-editor code-viewer" data-code-viewer aria-label="Пример Python-кода"></div>
               </div>
-              <textarea class="code-source" aria-label="Исходный код примера">message = "Глобальное значение"
+              <textarea class="code-source" aria-label="Исходный код примера">print()</textarea>
 
-def show_message():
-    message = "Локальное значение"
-    return message</textarea>
-
-              <form class="quiz-input-form" data-answer="local|локальная|локальной|локальная область|local scope">
-                <label for="scopeAnswer">Введите ответ</label>
+              <form class="quiz-input-form" data-answer="верный вариант 1|верный вариант 2|верный вариант 3">
+                <label for="scopeAnswer">Ваш ответ</label>
                 <div class="quiz-input-row">
                   <input
                     id="scopeAnswer"
@@ -363,7 +339,7 @@ def show_message():
                     class="quiz-input"
                     type="text"
                     autocomplete="off"
-                    placeholder="Например: local"
+                    placeholder="Введите ответ..."
                     aria-describedby="scopeInputFeedback"
                   />
                   <button type="submit" class="quiz-submit">Ответить</button>
@@ -371,28 +347,26 @@ def show_message():
                 <p
                   id="scopeInputFeedback"
                   class="quiz-feedback"
-                  data-correct-feedback="Верно: внутри функции Python сначала ищет имя в локальной области видимости."
-                  data-incorrect-feedback="Неверно: по правилу LEGB поиск начинается с Local, то есть с локальной области внутри функции."
+                  data-correct-feedback="Описание причины."
+                  data-incorrect-feedback="Описание причины."
                   aria-live="polite"
                 ></p>
               </form>
             </div>
           </section>
 
-          <section id="lambda" class="lesson-section">
+          <section id="heading04" class="lesson-section">
             <div class="section-heading">
               <span>04</span>
-              <h2>Lambda</h2>
+              <h2>Заголовок</h2>
             </div>
             <p>
-              Lambda-функция нужна для короткого выражения без отдельного имени. Ее удобно применять
-              с <code>sorted()</code>, <code>map()</code> или <code>filter()</code>, когда логика
-              помещается в одну строку.
+                Текст.
             </p>
 
             <div class="code-lab" data-code-lab>
               <div class="code-lab-head">
-                <h3>Проверь lambda</h3>
+                <h3>Заголовок</h3>
               </div>
               <div class="code-editor-frame">
                 <div class="code-lab-actions">
@@ -410,10 +384,7 @@ def show_message():
                 </div>
                 <div class="code-editor" aria-label="Редактор Python-кода"></div>
               </div>
-              <textarea class="code-source" aria-label="Исходный код Python">numbers = [1, 2, 3, 4, 5]
-squares = list(map(lambda number: number ** 2, numbers))
-
-print(squares)</textarea>
+              <textarea class="code-source" aria-label="Исходный код Python">print("test")</textarea>
               <div class="code-output" aria-live="polite"></div>
             </div>
           </section>

@@ -615,7 +615,7 @@ pre code {
   padding: 0 14px;
 }
 
-.theory-block {
+.block {
   --block-accent: var(--accent-2);
   --block-tint: 8%;
   min-width: 0;
@@ -626,28 +626,28 @@ pre code {
   background: color-mix(in srgb, var(--block-accent) var(--block-tint), var(--surface));
 }
 
-.theory-block-definition {
+.block-definition {
   --block-accent: #4cc9f0;
 }
 
-.theory-block-important {
+.block-important {
   --block-accent: #ffb703;
   --block-tint: 10%;
 }
 
-.theory-block-hint {
+.block-hint {
   --block-accent: #9bdb7f;
 }
 
-.theory-block-correct {
+.block-correct {
   --block-accent: #3ddc97;
 }
 
-.theory-block-incorrect {
+.block-incorrect {
   --block-accent: #ff8a8a;
 }
 
-.theory-block-label {
+.block-label {
   display: inline-flex;
   margin-bottom: 10px;
   padding: 5px 9px;
@@ -659,13 +659,13 @@ pre code {
   text-transform: uppercase;
 }
 
-.theory-block h3 {
+.block h3 {
   margin: 0;
   font-size: clamp(1.08rem, 1.5vw, 1.35rem);
   line-height: 1.25;
 }
 
-.lesson-section .theory-block p {
+.lesson-section .block p {
   margin-top: 10px;
 }
 
