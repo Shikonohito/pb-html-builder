@@ -384,6 +384,29 @@ a {
   line-height: 1.75;
 }
 
+.lesson-section a {
+  color: var(--accent-2);
+  font-weight: 700;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 46%, transparent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.22em;
+  transition:
+    color 160ms ease,
+    text-decoration-color 160ms ease;
+}
+
+.lesson-section a:hover {
+  color: var(--accent);
+  text-decoration-color: currentColor;
+}
+
+.lesson-section a:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-2) 72%, transparent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 .lesson-section code {
   padding: 0.12em 0.34em;
   border: 1px solid var(--inline-code-border);
