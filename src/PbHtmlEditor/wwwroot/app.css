@@ -1,16 +1,21 @@
 :root {
-    color-scheme: light;
-    --bg: #f5f7fb;
-    --panel: #ffffff;
-    --text: #1e293b;
-    --muted: #64748b;
-    --line: #d8dee9;
-    --line-strong: #b8c2d3;
-    --accent: #0f766e;
-    --accent-strong: #115e59;
+    color-scheme: dark;
+    --bg: #111318;
+    --panel: #191d24;
+    --panel-strong: #202630;
+    --text: #f5f1e8;
+    --muted: #c2c5c9;
+    --line: #3b414c;
+    --line-strong: #566071;
+    --accent: #ffb703;
+    --accent-strong: #f2a900;
+    --accent-2: #4cc9f0;
+    --practice-accent: #b892ff;
+    --code-bg: #08090d;
     --danger: #b42318;
-    --danger-bg: #fff1f0;
-    --focus: #2563eb;
+    --danger-bg: color-mix(in srgb, #ff8a8a 16%, var(--panel));
+    --focus: #4cc9f0;
+    --shadow: 0 20px 52px rgba(0, 0, 0, 0.32);
 }
 
 * {
@@ -24,7 +29,7 @@ body {
 }
 
 body {
-    background: var(--bg);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--bg) 88%, white), var(--bg));
     color: var(--text);
     font-family: Inter, "Segoe UI", Arial, sans-serif;
 }
@@ -62,10 +67,10 @@ input:focus-visible {
     align-content: start;
     gap: 28px;
     padding: 36px;
-    background: var(--panel);
+    background: color-mix(in srgb, var(--panel-strong) 93%, transparent);
     border: 1px solid var(--line);
     border-radius: 8px;
-    box-shadow: 0 20px 60px rgb(15 23 42 / 10%);
+    box-shadow: var(--shadow);
 }
 
 .startup-header {
@@ -93,7 +98,14 @@ h1 {
 .project-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 22px;
+    align-items: start;
+}
+
+.project-choice {
+    display: grid;
+    justify-items: center;
+    gap: 12px;
 }
 
 .primary-action,
@@ -106,27 +118,93 @@ h1 {
     font-weight: 700;
 }
 
-.primary-action,
 .create-action {
     background: var(--accent);
-    color: #ffffff;
+    color: #15120a;
 }
 
-.primary-action:hover,
 .create-action:hover {
     background: var(--accent-strong);
 }
 
+.primary-action {
+    width: min(100%, 132px);
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: var(--panel);
+    color: var(--text);
+    border-color: var(--line);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    transition:
+        background 160ms ease,
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+}
+
+.primary-action:hover {
+    transform: translateY(-2px);
+    background: var(--panel-strong);
+}
+
+.theory-action {
+    color: var(--accent-2);
+}
+
+.practice-action {
+    color: var(--practice-accent);
+}
+
+.theory-action:hover {
+    border-color: var(--accent-2);
+    box-shadow:
+        0 14px 34px rgba(0, 0, 0, 0.28),
+        0 0 0 5px color-mix(in srgb, var(--accent-2) 14%, transparent);
+}
+
+.practice-action:hover {
+    border-color: var(--practice-accent);
+    box-shadow:
+        0 14px 34px rgba(0, 0, 0, 0.28),
+        0 0 0 5px color-mix(in srgb, var(--practice-accent) 14%, transparent);
+}
+
+.primary-action svg {
+    width: 56px;
+    height: 56px;
+    fill: none;
+    stroke: color-mix(in srgb, currentColor 72%, var(--text));
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+}
+
+.primary-action .icon-accent {
+    stroke: currentColor;
+    stroke-width: 2.4;
+}
+
+.project-choice-label {
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 800;
+    line-height: 1.25;
+    text-align: center;
+}
+
 .cancel-action,
 .icon-action {
-    background: #ffffff;
+    background: var(--panel-strong);
     color: var(--text);
     border-color: var(--line-strong);
 }
 
 .cancel-action:hover,
 .icon-action:hover {
-    background: #f8fafc;
+    background: color-mix(in srgb, var(--panel-strong) 88%, white);
+    border-color: var(--accent);
 }
 
 .project-form {
@@ -150,7 +228,7 @@ h1 {
     min-height: 44px;
     padding: 10px 12px;
     color: var(--text);
-    background: #ffffff;
+    background: var(--panel);
     border: 1px solid var(--line-strong);
     border-radius: 6px;
 }
@@ -201,9 +279,9 @@ h1 {
 
 .create-feedback {
     padding: 10px 12px;
-    color: var(--accent-strong);
-    background: #ecfdf5;
-    border: 1px solid #99f6e4;
+    color: color-mix(in srgb, var(--accent-2) 82%, white);
+    background: color-mix(in srgb, var(--accent-2) 14%, var(--panel));
+    border: 1px solid color-mix(in srgb, var(--accent-2) 42%, var(--line));
     border-radius: 6px;
 }
 
@@ -259,6 +337,10 @@ h1 {
     .form-actions {
         grid-template-columns: 1fr;
         flex-direction: column;
+    }
+
+    .primary-action {
+        width: min(100%, 116px);
     }
 
     .create-action,

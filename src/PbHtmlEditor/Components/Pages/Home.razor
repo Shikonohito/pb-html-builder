@@ -15,12 +15,37 @@
             </div>
 
             <div class="project-actions" aria-label="Create project">
-                <button type="button" class="primary-action" @onclick="() => BeginProject(ProjectKind.Theory)">
-                    New Theory
-                </button>
-                <button type="button" class="primary-action" @onclick="() => BeginProject(ProjectKind.Practice)">
-                    New Practice
-                </button>
+                <div class="project-choice">
+                    <button
+                        id="newTheoryAction"
+                        type="button"
+                        class="primary-action theory-action"
+                        aria-labelledby="newTheoryLabel"
+                        @onclick="() => BeginProject(ProjectKind.Theory)">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H7.5A3.5 3.5 0 0 0 4 21.5v-16Z" />
+                            <path d="M4 18.5A3.5 3.5 0 0 1 7.5 15H20" />
+                            <path class="icon-accent" d="M9 7h6" />
+                            <path class="icon-accent" d="M9 10h4" />
+                        </svg>
+                    </button>
+                    <span id="newTheoryLabel" class="project-choice-label">New Theory</span>
+                </div>
+                <div class="project-choice">
+                    <button
+                        id="newPracticeAction"
+                        type="button"
+                        class="primary-action practice-action"
+                        aria-labelledby="newPracticeLabel"
+                        @onclick="() => BeginProject(ProjectKind.Practice)">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 5h16v14H4z" />
+                            <path class="icon-accent" d="m8 9 3 3-3 3" />
+                            <path class="icon-accent" d="M13 15h4" />
+                        </svg>
+                    </button>
+                    <span id="newPracticeLabel" class="project-choice-label">New Practice</span>
+                </div>
             </div>
         }
         else
