@@ -1,1 +1,0 @@
-dotnet build ../src/PbHtmlEditor/PbHtmlEditor.csproj
