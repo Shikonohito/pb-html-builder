@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Starts the PbHtmlEditor Blazor dev server in the background.
+Starts the PbHtmlBuilder Blazor dev server in the background.
 
 .EXAMPLE
 .\scripts\Start-LocalServer.ps1
@@ -87,7 +87,7 @@ function Get-ListeningProcessIds {
 $scriptDirectory = Get-ScriptDirectory
 $repoRoot = Resolve-Path (Join-Path $scriptDirectory '..')
 if ([string]::IsNullOrWhiteSpace($ProjectPath)) {
-    $ProjectPath = Join-Path $repoRoot 'src\PbHtmlEditor\PbHtmlEditor.csproj'
+    $ProjectPath = Join-Path $repoRoot 'src\PbHtmlBuilder\PbHtmlBuilder.csproj'
 }
 
 $projectFullPath = (Resolve-Path $ProjectPath).Path

@@ -1,4 +1,4 @@
-namespace PbHtmlEditor.Services;
+namespace PbHtmlBuilder.Services;
 
 public sealed class ProjectDraftStore(IHostEnvironment environment)
 {

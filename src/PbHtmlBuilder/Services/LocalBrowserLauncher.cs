@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 
-namespace PbHtmlEditor.Services;
+namespace PbHtmlBuilder.Services;
 
 public sealed class LocalBrowserLauncher(
     IConfiguration configuration,

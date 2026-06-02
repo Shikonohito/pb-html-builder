@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Stops the PbHtmlEditor Blazor dev server started by Start-LocalServer.ps1.
+Stops the PbHtmlBuilder Blazor dev server started by Start-LocalServer.ps1.
 
 .EXAMPLE
 .\scripts\Stop-LocalServer.ps1
@@ -94,7 +94,7 @@ function Test-ExpectedServerProcess {
 
     return (
         $normalizedCommandLine.Contains($normalizedProjectPath) -or
-        $normalizedCommandLine.Contains('pbhtmleditor')
+        $normalizedCommandLine.Contains('pbhtmlbuilder')
     )
 }
 
@@ -118,7 +118,7 @@ function Add-TargetProcess {
 
 $scriptDirectory = Get-ScriptDirectory
 $repoRoot = Resolve-Path (Join-Path $scriptDirectory '..')
-$projectPath = (Resolve-Path (Join-Path $repoRoot 'src\PbHtmlEditor\PbHtmlEditor.csproj')).Path
+$projectPath = (Resolve-Path (Join-Path $repoRoot 'src\PbHtmlBuilder\PbHtmlBuilder.csproj')).Path
 $port = Get-UrlPort -Value $Url
 $stateFile = Join-Path (Join-Path $repoRoot 'temp') "local-server-$port.json"
 

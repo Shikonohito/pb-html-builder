@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 
-namespace PbHtmlEditor.Services;
+namespace PbHtmlBuilder.Services;
 
 public sealed class FolderDialogService
 {

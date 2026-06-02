@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
-using PbHtmlEditor.Components;
-using PbHtmlEditor.Services;
+using PbHtmlBuilder.Components;
+using PbHtmlBuilder.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
