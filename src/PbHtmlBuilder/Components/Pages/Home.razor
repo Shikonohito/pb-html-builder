@@ -6,7 +6,7 @@
 <PageTitle>PB HTML Builder</PageTitle>
 
 <main class="startup-shell">
-    <section class="startup-panel" aria-labelledby="startupTitle">
+    <section class="startup-panel @SelectedKindClass" aria-labelledby="startupTitle">
         @if (selectedKind is null)
         {
             <div class="startup-header">
@@ -29,7 +29,7 @@
                             <path class="icon-accent" d="M9 10h4" />
                         </svg>
                     </button>
-                    <span id="newTheoryLabel" class="project-choice-label">New Theory</span>
+                    <span id="newTheoryLabel" class="project-choice-label theory-label">New Theory</span>
                 </div>
                 <div class="project-choice">
                     <button
@@ -44,7 +44,7 @@
                             <path class="icon-accent" d="M13 15h4" />
                         </svg>
                     </button>
-                    <span id="newPracticeLabel" class="project-choice-label">New Practice</span>
+                    <span id="newPracticeLabel" class="project-choice-label practice-label">New Practice</span>
                 </div>
             </div>
         }
@@ -75,7 +75,10 @@
                 </div>
 
                 <div class="field">
-                    <label for="fileName">File name</label>
+                    <div class="field-heading">
+                        <label for="fileName">File name</label>
+                        <p id="fileNameFeedback" class="field-feedback" aria-live="polite">@fileNameError</p>
+                    </div>
                     <input
                         id="fileName"
                         class="@FileNameInputClass"
@@ -85,7 +88,6 @@
                         aria-describedby="fileNameFeedback"
                         @bind="input.FileName"
                         @bind:event="oninput" />
-                    <p id="fileNameFeedback" class="field-feedback" aria-live="polite">@fileNameError</p>
                 </div>
 
                 <div class="field">
@@ -124,6 +126,13 @@
     private string SelectedKindLabel => CurrentKind == ProjectKind.Theory ? "New Theory" : "New Practice";
 
     private string SelectedKindTitle => CurrentKind == ProjectKind.Theory ? "Create a new theory" : "Create a new practice";
+
+    private string SelectedKindClass => selectedKind switch
+    {
+        ProjectKind.Theory => "theory-mode",
+        ProjectKind.Practice => "practice-mode",
+        _ => string.Empty
+    };
 
     private string DefaultPathHint => CurrentKind == ProjectKind.Theory
         ? @".\projects\theory"
