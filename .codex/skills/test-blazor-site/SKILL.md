@@ -22,7 +22,24 @@ description: Test a local C# Blazor web site or Blazor Web App in this workspace
    - Follow the user's requested scenario first.
    - For general smoke testing, verify the initial page loads, core navigation works, and the changed UI or feature behaves correctly.
 
-4. At the end, stop the local server by running `.\scripts\Stop-LocalServer.ps1` from the workspace root outside the sandbox with escalation.
+4. Prepare a test results report.
+   - Place the report in `.\reports\issue\open`.
+   - The file name must use the format `yyyy-mm-dd-hhmmss.json`.
+   - One issue = one file.
+   - Report template:
+   ```json
+   {
+     "Title": "Brief description of the issue.",
+     "Steps to Reproduce": [
+       "Numbered list of actions."
+     ],
+     "Actual Result": "What actually happened.",
+     "Expected Result": "What should have happened.",
+     "Severity": "Blocker, Critical, Major, Minor, Trivial."
+   }
+   ```
+
+5. At the end, stop the local server by running `.\scripts\Stop-LocalServer.ps1` from the workspace root outside the sandbox with escalation.
    - Do this after successful tests, failed tests, or partial startup.
    - Use `sandbox_permissions: "require_escalated"`.
    - Ask for approval with a short justification such as: `Allow stopping the local Blazor server outside the sandbox?`
