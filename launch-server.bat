@@ -89,7 +89,8 @@ function Start-LoggedStartScript {
         '-File',
         (Quote-ProcessArgument $startScript),
         '-Url',
-        (Quote-ProcessArgument $url)
+        (Quote-ProcessArgument $url),
+        '-LaunchBrowser'
     )
 
     Add-LauncherLog "Start helper stdout: $startStdoutLog"

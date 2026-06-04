@@ -8,6 +8,11 @@ Starts the PbHtmlBuilder Blazor dev server in the background.
 Builds the project without restore, starts http://localhost:5021, waits until it responds, and writes PID/log paths.
 
 .EXAMPLE
+.\scripts\Start-LocalServer.ps1 -LaunchBrowser
+
+Starts the server and opens http://localhost:5021 after the server is ready.
+
+.EXAMPLE
 .\scripts\Start-LocalServer.ps1 -NoBuild
 
 Starts the last built output without building. Useful for sandboxed test agents.
@@ -25,7 +30,8 @@ param(
     [int]$TimeoutSeconds = 90,
     [switch]$Restore,
     [switch]$NoBuild,
-    [switch]$Force
+    [switch]$Force,
+    [switch]$LaunchBrowser
 )
 
 Set-StrictMode -Version Latest
@@ -71,6 +77,18 @@ function Test-HttpReady {
     }
 }
 
+function Open-LocalBrowser {
+    param([string]$Value)
+
+    try {
+        Start-Process -FilePath $Value | Out-Null
+    }
+    catch {
+        Write-Warning "Local server is ready, but the browser could not be opened automatically: $($_.Exception.Message)"
+        Write-Host "Open this URL manually: $Value"
+    }
+}
+
 function Get-ListeningProcessIds {
     param([int]$Port)
 
@@ -106,6 +124,10 @@ if (Test-HttpReady -Value $Url) {
     Write-Host "Local server is already ready: $Url"
     if (Test-Path $stateFile) {
         Write-Host "State file: $stateFile"
+    }
+
+    if ($LaunchBrowser) {
+        Open-LocalBrowser -Value $Url
     }
 
     exit 0
@@ -216,6 +238,10 @@ while ((Get-Date) -lt $deadline) {
         Write-Host "Local server is ready: $Url"
         Write-Host "PID: $serverProcessId"
         Write-Host "State file: $stateFile"
+        if ($LaunchBrowser) {
+            Open-LocalBrowser -Value $Url
+        }
+
         exit 0
     }
 
