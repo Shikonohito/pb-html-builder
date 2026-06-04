@@ -1,38 +1,21 @@
+using Microsoft.Extensions.Options;
+
 namespace PbHtmlBuilder.Services;
 
-public sealed class ProjectDraftStore(IHostEnvironment environment)
+public sealed class ProjectDraftStore(IOptions<LocalAppOptions> localAppOptions)
 {
     public ProjectDraft? LastCreated { get; private set; }
 
     public string GetDefaultDirectory(ProjectKind kind)
     {
-        var projectRoot = FindProjectRoot(environment.ContentRootPath);
         var subdirectory = kind == ProjectKind.Theory ? "theory" : "practice";
 
-        return Path.GetFullPath(Path.Combine(projectRoot, "projects", subdirectory));
+        return Path.GetFullPath(Path.Combine(localAppOptions.Value.ProjectsRoot, subdirectory));
     }
 
     public void Remember(ProjectDraft draft)
     {
         LastCreated = draft;
-    }
-
-    private static string FindProjectRoot(string startPath)
-    {
-        var directory = new DirectoryInfo(startPath);
-
-        while (directory is not null)
-        {
-            var requirementsPath = Path.Combine(directory.FullName, "docs", "tool-requirements.txt");
-            if (File.Exists(requirementsPath))
-            {
-                return directory.FullName;
-            }
-
-            directory = directory.Parent;
-        }
-
-        return startPath;
     }
 }
 

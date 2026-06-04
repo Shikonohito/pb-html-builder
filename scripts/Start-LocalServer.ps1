@@ -188,7 +188,7 @@ if ($NoBuild) {
 $dotnetArguments += @(
     '--',
     '--urls', $Url,
-    '--LaunchBrowser=false'
+    '--LocalApp:LaunchBrowser=false'
 )
 
 Write-Host "Starting local server..."
