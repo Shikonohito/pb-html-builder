@@ -57,13 +57,19 @@
 
             <form class="project-form" @onsubmit="CreateProject" @onsubmit:preventDefault>
                 <div class="field">
-                    <label for="directoryPath">Path</label>
+                    <div class="field-heading">
+                        <label for="directoryPath">Folder</label>
+                        <p id="directoryPathFeedback" class="field-feedback" aria-live="polite">@folderError</p>
+                    </div>
                     <div class="path-control">
                         <input
                             id="directoryPath"
+                            class="@FolderInputClass"
                             type="text"
                             autocomplete="off"
-                            placeholder="@DefaultPathHint"
+                            placeholder="@DefaultFolderHint"
+                            aria-invalid="@(!string.IsNullOrEmpty(folderError))"
+                            aria-describedby="directoryPathFeedback"
                             @bind="input.DirectoryPath"
                             @bind:event="oninput" />
                         <button type="button" class="icon-action" title="Choose folder" aria-label="Choose folder" @onclick="ChooseFolderAsync">
@@ -118,6 +124,7 @@
 @code {
     private ProjectKind? selectedKind;
     private NewProjectInput input = new();
+    private string? folderError;
     private string? fileNameError;
     private string? createFeedback;
 
@@ -134,9 +141,9 @@
         _ => string.Empty
     };
 
-    private string DefaultPathHint => CurrentKind == ProjectKind.Theory
-        ? @".\projects\theory"
-        : @".\projects\practice";
+    private string DefaultFolderHint => DraftStore.GetDefaultDirectory(CurrentKind);
+
+    private string FolderInputClass => string.IsNullOrEmpty(folderError) ? string.Empty : "invalid";
 
     private string FileNameInputClass => string.IsNullOrEmpty(fileNameError) ? string.Empty : "invalid";
 
@@ -144,6 +151,7 @@
     {
         selectedKind = kind;
         input = new NewProjectInput();
+        folderError = null;
         fileNameError = null;
         createFeedback = null;
     }
@@ -152,6 +160,7 @@
     {
         selectedKind = null;
         input = new NewProjectInput();
+        folderError = null;
         fileNameError = null;
         createFeedback = null;
     }
@@ -162,11 +171,13 @@
         if (!string.IsNullOrWhiteSpace(selectedPath))
         {
             input.DirectoryPath = selectedPath;
+            folderError = null;
         }
     }
 
     private void CreateProject()
     {
+        folderError = null;
         fileNameError = null;
         createFeedback = null;
 
@@ -177,9 +188,11 @@
             return;
         }
 
-        var directoryPath = string.IsNullOrWhiteSpace(input.DirectoryPath)
-            ? DraftStore.GetDefaultDirectory(CurrentKind)
-            : input.DirectoryPath.Trim();
+        if (!TryPrepareDirectory(out var directoryPath))
+        {
+            return;
+        }
+
         var browserTitle = string.IsNullOrWhiteSpace(input.BrowserTitle)
             ? fileName
             : input.BrowserTitle.Trim();
@@ -188,7 +201,32 @@
         DraftStore.Remember(draft);
         input.DirectoryPath = directoryPath;
 
-        createFeedback = $"Create is a placeholder. Remembered {SelectedKindLabel}: {Path.Combine(directoryPath, fileName)}";
+        createFeedback = $"Create is a placeholder. Prepared folder and remembered {SelectedKindLabel}: {Path.Combine(directoryPath, fileName)}";
+    }
+
+    private bool TryPrepareDirectory(out string directoryPath)
+    {
+        directoryPath = string.IsNullOrWhiteSpace(input.DirectoryPath)
+            ? DraftStore.GetDefaultDirectory(CurrentKind)
+            : input.DirectoryPath.Trim();
+
+        try
+        {
+            if (!Path.IsPathFullyQualified(directoryPath))
+            {
+                folderError = "Folder must be an absolute path.";
+                return false;
+            }
+
+            directoryPath = Path.GetFullPath(directoryPath);
+            Directory.CreateDirectory(directoryPath);
+            return true;
+        }
+        catch (Exception exception) when (exception is ArgumentException or IOException or NotSupportedException or UnauthorizedAccessException)
+        {
+            folderError = $"Cannot create folder: {exception.Message}";
+            return false;
+        }
     }
 
     private sealed class NewProjectInput

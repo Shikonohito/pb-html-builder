@@ -7,6 +7,8 @@ namespace PbHtmlBuilder.Services;
 public sealed class FolderDialogService
 {
     private const string DialogTitle = "Select project folder";
+    private static readonly object VisualStylesLock = new();
+    private static bool visualStylesEnabled;
 
     public Task<string?> PickFolderAsync(string? initialDirectory)
     {
@@ -16,29 +18,29 @@ public sealed class FolderDialogService
         }
 
         var foregroundWindow = GetForegroundWindow();
-        var completion = new TaskCompletionSource<string?>();
+        var completion = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         var thread = new Thread(() =>
         {
             try
             {
-                Application.EnableVisualStyles();
+                EnsureVisualStylesEnabled();
 
                 using var dialog = new FolderBrowserDialog
                 {
                     Description = DialogTitle,
                     UseDescriptionForTitle = true,
-                    SelectedPath = Directory.Exists(initialDirectory) ? initialDirectory : string.Empty
+                    SelectedPath = GetExistingInitialDirectory(initialDirectory)
                 };
                 using var owner = new WindowHandleOwner(foregroundWindow);
 
                 var result = foregroundWindow == IntPtr.Zero
                     ? dialog.ShowDialog()
                     : dialog.ShowDialog(owner);
-                completion.SetResult(result == DialogResult.OK ? dialog.SelectedPath : null);
+                completion.TrySetResult(result == DialogResult.OK ? dialog.SelectedPath : null);
             }
             catch (Exception exception)
             {
-                completion.SetException(exception);
+                completion.TrySetException(exception);
             }
         });
 
@@ -47,6 +49,47 @@ public sealed class FolderDialogService
         thread.Start();
 
         return completion.Task;
+    }
+
+    private static void EnsureVisualStylesEnabled()
+    {
+        lock (VisualStylesLock)
+        {
+            if (visualStylesEnabled)
+            {
+                return;
+            }
+
+            Application.EnableVisualStyles();
+            visualStylesEnabled = true;
+        }
+    }
+
+    private static string GetExistingInitialDirectory(string? initialDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(initialDirectory))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            var directory = new DirectoryInfo(initialDirectory.Trim());
+            while (directory is not null)
+            {
+                if (directory.Exists)
+                {
+                    return directory.FullName;
+                }
+
+                directory = directory.Parent;
+            }
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+        }
+
+        return string.Empty;
     }
 
     private sealed class WindowHandleOwner(IntPtr handle) : IWin32Window, IDisposable
