@@ -1,2 +1,7 @@
-.opencode/
-opencode.json
+bin/
+obj/
+src/PbHtmlBuilder/App_Data/
+src/PbHtmlBuilder/*.log
+temp/
+logs/
+reports/

@@ -1,0 +1,202 @@
+@page "/"
+@rendermode InteractiveServer
+@inject FolderDialogService FolderDialog
+@inject ProjectDraftStore DraftStore
+
+<PageTitle>PB HTML Builder</PageTitle>
+
+<main class="startup-shell">
+    <section class="startup-panel @SelectedKindClass" aria-labelledby="startupTitle">
+        @if (selectedKind is null)
+        {
+            <div class="startup-header">
+                <p class="kicker">PB HTML Builder</p>
+                <h1 id="startupTitle">Start a project</h1>
+            </div>
+
+            <div class="project-actions" aria-label="Create project">
+                <div class="project-choice">
+                    <button
+                        id="newTheoryAction"
+                        type="button"
+                        class="primary-action theory-action"
+                        aria-labelledby="newTheoryLabel"
+                        @onclick="() => BeginProject(ProjectKind.Theory)">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H7.5A3.5 3.5 0 0 0 4 21.5v-16Z" />
+                            <path d="M4 18.5A3.5 3.5 0 0 1 7.5 15H20" />
+                            <path class="icon-accent" d="M9 7h6" />
+                            <path class="icon-accent" d="M9 10h4" />
+                        </svg>
+                    </button>
+                    <span id="newTheoryLabel" class="project-choice-label theory-label">New Theory</span>
+                </div>
+                <div class="project-choice">
+                    <button
+                        id="newPracticeAction"
+                        type="button"
+                        class="primary-action practice-action"
+                        aria-labelledby="newPracticeLabel"
+                        @onclick="() => BeginProject(ProjectKind.Practice)">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 5h16v14H4z" />
+                            <path class="icon-accent" d="m8 9 3 3-3 3" />
+                            <path class="icon-accent" d="M13 15h4" />
+                        </svg>
+                    </button>
+                    <span id="newPracticeLabel" class="project-choice-label practice-label">New Practice</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="startup-header">
+                <p class="kicker">@SelectedKindLabel</p>
+                <h1 id="startupTitle">@SelectedKindTitle</h1>
+            </div>
+
+            <form class="project-form" @onsubmit="CreateProject" @onsubmit:preventDefault>
+                <div class="field">
+                    <label for="directoryPath">Path</label>
+                    <div class="path-control">
+                        <input
+                            id="directoryPath"
+                            type="text"
+                            autocomplete="off"
+                            placeholder="@DefaultPathHint"
+                            @bind="input.DirectoryPath"
+                            @bind:event="oninput" />
+                        <button type="button" class="icon-action" title="Choose folder" aria-label="Choose folder" @onclick="ChooseFolderAsync">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M3 6.5A2.5 2.5 0 0 1 5.5 4H10l2 2h6.5A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-10Z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <div class="field-heading">
+                        <label for="fileName">File name</label>
+                        <p id="fileNameFeedback" class="field-feedback" aria-live="polite">@fileNameError</p>
+                    </div>
+                    <input
+                        id="fileName"
+                        class="@FileNameInputClass"
+                        type="text"
+                        autocomplete="off"
+                        aria-invalid="@(!string.IsNullOrEmpty(fileNameError))"
+                        aria-describedby="fileNameFeedback"
+                        @bind="input.FileName"
+                        @bind:event="oninput" />
+                </div>
+
+                <div class="field">
+                    <label for="browserTitle">Browser title</label>
+                    <input
+                        id="browserTitle"
+                        type="text"
+                        autocomplete="off"
+                        placeholder="Uses file name when empty"
+                        @bind="input.BrowserTitle"
+                        @bind:event="oninput" />
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="create-action">Create</button>
+                    <button type="button" class="cancel-action" @onclick="CancelProject">Cancel</button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(createFeedback))
+                {
+                    <p class="create-feedback" aria-live="polite">@createFeedback</p>
+                }
+            </form>
+        }
+    </section>
+</main>
+
+@code {
+    private ProjectKind? selectedKind;
+    private NewProjectInput input = new();
+    private string? fileNameError;
+    private string? createFeedback;
+
+    private ProjectKind CurrentKind => selectedKind ?? ProjectKind.Theory;
+
+    private string SelectedKindLabel => CurrentKind == ProjectKind.Theory ? "New Theory" : "New Practice";
+
+    private string SelectedKindTitle => CurrentKind == ProjectKind.Theory ? "Create a new theory" : "Create a new practice";
+
+    private string SelectedKindClass => selectedKind switch
+    {
+        ProjectKind.Theory => "theory-mode",
+        ProjectKind.Practice => "practice-mode",
+        _ => string.Empty
+    };
+
+    private string DefaultPathHint => CurrentKind == ProjectKind.Theory
+        ? @".\projects\theory"
+        : @".\projects\practice";
+
+    private string FileNameInputClass => string.IsNullOrEmpty(fileNameError) ? string.Empty : "invalid";
+
+    private void BeginProject(ProjectKind kind)
+    {
+        selectedKind = kind;
+        input = new NewProjectInput();
+        fileNameError = null;
+        createFeedback = null;
+    }
+
+    private void CancelProject()
+    {
+        selectedKind = null;
+        input = new NewProjectInput();
+        fileNameError = null;
+        createFeedback = null;
+    }
+
+    private async Task ChooseFolderAsync()
+    {
+        var selectedPath = await FolderDialog.PickFolderAsync(input.DirectoryPath);
+        if (!string.IsNullOrWhiteSpace(selectedPath))
+        {
+            input.DirectoryPath = selectedPath;
+        }
+    }
+
+    private void CreateProject()
+    {
+        fileNameError = null;
+        createFeedback = null;
+
+        var fileName = input.FileName.Trim();
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            fileNameError = "File name cannot be empty.";
+            return;
+        }
+
+        var directoryPath = string.IsNullOrWhiteSpace(input.DirectoryPath)
+            ? DraftStore.GetDefaultDirectory(CurrentKind)
+            : input.DirectoryPath.Trim();
+        var browserTitle = string.IsNullOrWhiteSpace(input.BrowserTitle)
+            ? fileName
+            : input.BrowserTitle.Trim();
+
+        var draft = new ProjectDraft(CurrentKind, directoryPath, fileName, browserTitle);
+        DraftStore.Remember(draft);
+        input.DirectoryPath = directoryPath;
+
+        createFeedback = $"Create is a placeholder. Remembered {SelectedKindLabel}: {Path.Combine(directoryPath, fileName)}";
+    }
+
+    private sealed class NewProjectInput
+    {
+        public string DirectoryPath { get; set; } = string.Empty;
+
+        public string FileName { get; set; } = string.Empty;
+
+        public string BrowserTitle { get; set; } = string.Empty;
+    }
+}
