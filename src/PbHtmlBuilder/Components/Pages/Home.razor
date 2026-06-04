@@ -127,6 +127,34 @@
     private string? folderError;
     private string? fileNameError;
     private string? createFeedback;
+    private const int MaximumWindowsPathLength = 260;
+    private const string DefaultFileExtension = ".html";
+    private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
+    private static readonly HashSet<string> ReservedWindowsFileNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "COM5",
+        "COM6",
+        "COM7",
+        "COM8",
+        "COM9",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "LPT4",
+        "LPT5",
+        "LPT6",
+        "LPT7",
+        "LPT8",
+        "LPT9"
+    };
 
     private ProjectKind CurrentKind => selectedKind ?? ProjectKind.Theory;
 
@@ -181,14 +209,22 @@
         fileNameError = null;
         createFeedback = null;
 
-        var fileName = input.FileName.Trim();
-        if (string.IsNullOrWhiteSpace(fileName))
+        if (!TryNormalizeFileName(out var fileName))
         {
-            fileNameError = "File name cannot be empty.";
             return;
         }
 
-        if (!TryPrepareDirectory(out var directoryPath))
+        if (!TryResolveDirectoryPath(out var directoryPath))
+        {
+            return;
+        }
+
+        if (!TryValidateFilePath(directoryPath, fileName))
+        {
+            return;
+        }
+
+        if (!TryCreateDirectory(directoryPath))
         {
             return;
         }
@@ -200,11 +236,95 @@
         var draft = new ProjectDraft(CurrentKind, directoryPath, fileName, browserTitle);
         DraftStore.Remember(draft);
         input.DirectoryPath = directoryPath;
+        input.FileName = fileName;
 
         createFeedback = $"Create is a placeholder. Prepared folder and remembered {SelectedKindLabel}: {Path.Combine(directoryPath, fileName)}";
     }
 
-    private bool TryPrepareDirectory(out string directoryPath)
+    private bool TryNormalizeFileName(out string fileName)
+    {
+        fileName = input.FileName.TrimStart();
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            fileNameError = "File name cannot be empty.";
+            return false;
+        }
+
+        if (fileName.EndsWith(' '))
+        {
+            fileNameError = "File name cannot end with a space.";
+            return false;
+        }
+
+        if (fileName.EndsWith('.'))
+        {
+            fileNameError = "File name cannot end with a dot.";
+            return false;
+        }
+
+        if (fileName.Contains('/') || fileName.Contains('\\'))
+        {
+            fileNameError = "File name cannot contain slash or backslash.";
+            return false;
+        }
+
+        if (fileName.Contains(':'))
+        {
+            fileNameError = "File name cannot contain a colon.";
+            return false;
+        }
+
+        if (fileName.IndexOfAny(InvalidFileNameChars) >= 0)
+        {
+            fileNameError = "File name contains invalid Windows characters.";
+            return false;
+        }
+
+        var reservedNameCandidate = fileName.Split('.', 2)[0];
+        if (ReservedWindowsFileNames.Contains(reservedNameCandidate))
+        {
+            fileNameError = "File name cannot use a reserved Windows device name.";
+            return false;
+        }
+
+        var extension = Path.GetExtension(fileName);
+        if (string.IsNullOrEmpty(extension))
+        {
+            fileName += DefaultFileExtension;
+            return true;
+        }
+
+        if (!string.Equals(extension, DefaultFileExtension, StringComparison.OrdinalIgnoreCase))
+        {
+            fileNameError = "Use .html as the file extension.";
+            return false;
+        }
+
+        fileName = Path.ChangeExtension(fileName, DefaultFileExtension);
+        return true;
+    }
+
+    private bool TryValidateFilePath(string directoryPath, string fileName)
+    {
+        try
+        {
+            var fullPath = Path.GetFullPath(Path.Combine(directoryPath, fileName));
+            if (fullPath.Length >= MaximumWindowsPathLength)
+            {
+                fileNameError = "Full file path is too long. Use a shorter folder or file name.";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            fileNameError = $"File path is invalid: {exception.Message}";
+            return false;
+        }
+    }
+
+    private bool TryResolveDirectoryPath(out string directoryPath)
     {
         directoryPath = string.IsNullOrWhiteSpace(input.DirectoryPath)
             ? DraftStore.GetDefaultDirectory(CurrentKind)
@@ -219,10 +339,23 @@
             }
 
             directoryPath = Path.GetFullPath(directoryPath);
+            return true;
+        }
+        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            folderError = $"Folder path is invalid: {exception.Message}";
+            return false;
+        }
+    }
+
+    private bool TryCreateDirectory(string directoryPath)
+    {
+        try
+        {
             Directory.CreateDirectory(directoryPath);
             return true;
         }
-        catch (Exception exception) when (exception is ArgumentException or IOException or NotSupportedException or UnauthorizedAccessException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException)
         {
             folderError = $"Cannot create folder: {exception.Message}";
             return false;
