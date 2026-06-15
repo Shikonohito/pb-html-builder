@@ -1,13 +1,17 @@
 @page "/"
 @rendermode InteractiveServer
-@inject FolderDialogService FolderDialog
-@inject ProjectDraftStore DraftStore
+@using Pb.Builder.Application.Ports
+@using Pb.Builder.Application.UseCases
+@using Pb.Builder.Domain.Documents
+@inject IFileDialogService FileDialog
+@inject IProjectPathService ProjectPathService
+@inject NewDocumentUseCase NewDocument
 
 <PageTitle>PB HTML Builder</PageTitle>
 
 <main class="startup-shell">
     <section class="startup-panel @SelectedKindClass" aria-labelledby="startupTitle">
-        @if (selectedKind is null)
+        @if (selectedType is null)
         {
             <div class="startup-header">
                 <p class="kicker">PB HTML Builder</p>
@@ -21,7 +25,7 @@
                         type="button"
                         class="primary-action theory-action"
                         aria-labelledby="newTheoryLabel"
-                        @onclick="() => BeginProject(ProjectKind.Theory)">
+                        @onclick="() => BeginProject(DocumentType.Theory)">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H7.5A3.5 3.5 0 0 0 4 21.5v-16Z" />
                             <path d="M4 18.5A3.5 3.5 0 0 1 7.5 15H20" />
@@ -37,7 +41,7 @@
                         type="button"
                         class="primary-action practice-action"
                         aria-labelledby="newPracticeLabel"
-                        @onclick="() => BeginProject(ProjectKind.Practice)">
+                        @onclick="() => BeginProject(DocumentType.Practice)">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M4 5h16v14H4z" />
                             <path class="icon-accent" d="m8 9 3 3-3 3" />
@@ -122,62 +126,34 @@
 </main>
 
 @code {
-    private ProjectKind? selectedKind;
+    private DocumentType? selectedType;
     private NewProjectInput input = new();
     private string? folderError;
     private string? fileNameError;
     private string? createFeedback;
-    private const int MaximumWindowsPathLength = 260;
-    private const string DefaultFileExtension = ".html";
-    private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
-    private static readonly HashSet<string> ReservedWindowsFileNames = new(StringComparer.OrdinalIgnoreCase)
+
+    private DocumentType CurrentType => selectedType ?? DocumentType.Theory;
+
+    private string SelectedKindLabel => CurrentType == DocumentType.Theory ? "New Theory" : "New Practice";
+
+    private string SelectedKindTitle => CurrentType == DocumentType.Theory ? "Create a new theory" : "Create a new practice";
+
+    private string SelectedKindClass => selectedType switch
     {
-        "CON",
-        "PRN",
-        "AUX",
-        "NUL",
-        "COM1",
-        "COM2",
-        "COM3",
-        "COM4",
-        "COM5",
-        "COM6",
-        "COM7",
-        "COM8",
-        "COM9",
-        "LPT1",
-        "LPT2",
-        "LPT3",
-        "LPT4",
-        "LPT5",
-        "LPT6",
-        "LPT7",
-        "LPT8",
-        "LPT9"
-    };
-
-    private ProjectKind CurrentKind => selectedKind ?? ProjectKind.Theory;
-
-    private string SelectedKindLabel => CurrentKind == ProjectKind.Theory ? "New Theory" : "New Practice";
-
-    private string SelectedKindTitle => CurrentKind == ProjectKind.Theory ? "Create a new theory" : "Create a new practice";
-
-    private string SelectedKindClass => selectedKind switch
-    {
-        ProjectKind.Theory => "theory-mode",
-        ProjectKind.Practice => "practice-mode",
+        DocumentType.Theory => "theory-mode",
+        DocumentType.Practice => "practice-mode",
         _ => string.Empty
     };
 
-    private string DefaultFolderHint => DraftStore.GetDefaultDirectory(CurrentKind);
+    private string DefaultFolderHint => ProjectPathService.GetDefaultProjectDirectory(CurrentType);
 
     private string FolderInputClass => string.IsNullOrEmpty(folderError) ? string.Empty : "invalid";
 
     private string FileNameInputClass => string.IsNullOrEmpty(fileNameError) ? string.Empty : "invalid";
 
-    private void BeginProject(ProjectKind kind)
+    private void BeginProject(DocumentType type)
     {
-        selectedKind = kind;
+        selectedType = type;
         input = new NewProjectInput();
         folderError = null;
         fileNameError = null;
@@ -186,7 +162,7 @@
 
     private void CancelProject()
     {
-        selectedKind = null;
+        selectedType = null;
         input = new NewProjectInput();
         folderError = null;
         fileNameError = null;
@@ -195,7 +171,7 @@
 
     private async Task ChooseFolderAsync()
     {
-        var selectedPath = await FolderDialog.PickFolderAsync(input.DirectoryPath);
+        var selectedPath = await FileDialog.PickFolderAsync(input.DirectoryPath);
         if (!string.IsNullOrWhiteSpace(selectedPath))
         {
             input.DirectoryPath = selectedPath;
@@ -209,157 +185,24 @@
         fileNameError = null;
         createFeedback = null;
 
-        if (!TryNormalizeFileName(out var fileName))
+        var result = NewDocument.Create(new NewDocumentRequest(
+            CurrentType,
+            input.DirectoryPath,
+            input.FileName,
+            input.BrowserTitle));
+
+        folderError = result.FolderError;
+        fileNameError = result.FileNameError;
+
+        if (!result.Succeeded)
         {
             return;
         }
 
-        if (!TryResolveDirectoryPath(out var directoryPath))
-        {
-            return;
-        }
-
-        if (!TryValidateFilePath(directoryPath, fileName))
-        {
-            return;
-        }
-
-        if (!TryCreateDirectory(directoryPath))
-        {
-            return;
-        }
-
-        var browserTitle = string.IsNullOrWhiteSpace(input.BrowserTitle)
-            ? fileName
-            : input.BrowserTitle.Trim();
-
-        var draft = new ProjectDraft(CurrentKind, directoryPath, fileName, browserTitle);
-        DraftStore.Remember(draft);
-        input.DirectoryPath = directoryPath;
-        input.FileName = fileName;
-
-        createFeedback = $"Create is a placeholder. Prepared folder and remembered {SelectedKindLabel}: {Path.Combine(directoryPath, fileName)}";
-    }
-
-    private bool TryNormalizeFileName(out string fileName)
-    {
-        fileName = input.FileName.TrimStart();
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            fileNameError = "File name cannot be empty.";
-            return false;
-        }
-
-        if (fileName.EndsWith(' '))
-        {
-            fileNameError = "File name cannot end with a space.";
-            return false;
-        }
-
-        if (fileName.EndsWith('.'))
-        {
-            fileNameError = "File name cannot end with a dot.";
-            return false;
-        }
-
-        if (fileName.Contains('/') || fileName.Contains('\\'))
-        {
-            fileNameError = "File name cannot contain slash or backslash.";
-            return false;
-        }
-
-        if (fileName.Contains(':'))
-        {
-            fileNameError = "File name cannot contain a colon.";
-            return false;
-        }
-
-        if (fileName.IndexOfAny(InvalidFileNameChars) >= 0)
-        {
-            fileNameError = "File name contains invalid Windows characters.";
-            return false;
-        }
-
-        var reservedNameCandidate = fileName.Split('.', 2)[0];
-        if (ReservedWindowsFileNames.Contains(reservedNameCandidate))
-        {
-            fileNameError = "File name cannot use a reserved Windows device name.";
-            return false;
-        }
-
-        var extension = Path.GetExtension(fileName);
-        if (string.IsNullOrEmpty(extension))
-        {
-            fileName += DefaultFileExtension;
-            return true;
-        }
-
-        if (!string.Equals(extension, DefaultFileExtension, StringComparison.OrdinalIgnoreCase))
-        {
-            fileNameError = "Use .html as the file extension.";
-            return false;
-        }
-
-        fileName = Path.ChangeExtension(fileName, DefaultFileExtension);
-        return true;
-    }
-
-    private bool TryValidateFilePath(string directoryPath, string fileName)
-    {
-        try
-        {
-            var fullPath = Path.GetFullPath(Path.Combine(directoryPath, fileName));
-            if (fullPath.Length >= MaximumWindowsPathLength)
-            {
-                fileNameError = "Full file path is too long. Use a shorter folder or file name.";
-                return false;
-            }
-
-            return true;
-        }
-        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
-        {
-            fileNameError = $"File path is invalid: {exception.Message}";
-            return false;
-        }
-    }
-
-    private bool TryResolveDirectoryPath(out string directoryPath)
-    {
-        directoryPath = string.IsNullOrWhiteSpace(input.DirectoryPath)
-            ? DraftStore.GetDefaultDirectory(CurrentKind)
-            : input.DirectoryPath.Trim();
-
-        try
-        {
-            if (!Path.IsPathFullyQualified(directoryPath))
-            {
-                folderError = "Folder must be an absolute path.";
-                return false;
-            }
-
-            directoryPath = Path.GetFullPath(directoryPath);
-            return true;
-        }
-        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
-        {
-            folderError = $"Folder path is invalid: {exception.Message}";
-            return false;
-        }
-    }
-
-    private bool TryCreateDirectory(string directoryPath)
-    {
-        try
-        {
-            Directory.CreateDirectory(directoryPath);
-            return true;
-        }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or NotSupportedException)
-        {
-            folderError = $"Cannot create folder: {exception.Message}";
-            return false;
-        }
+        input.DirectoryPath = result.DirectoryPath ?? input.DirectoryPath;
+        input.FileName = result.FileName ?? input.FileName;
+        input.BrowserTitle = result.BrowserTitle ?? input.BrowserTitle;
+        createFeedback = result.Feedback;
     }
 
     private sealed class NewProjectInput

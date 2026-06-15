@@ -1,10 +1,11 @@
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using Pb.Builder.Application.Ports;
 
-namespace PbHtmlBuilder.Services;
+namespace Pb.Builder.Infrastructure.Windows.Dialogs;
 
-public sealed class FolderDialogService
+public sealed class WindowsFileDialogService : IFileDialogService
 {
     private const string DialogTitle = "Select project folder";
     private static readonly object VisualStylesLock = new();
@@ -60,7 +61,7 @@ public sealed class FolderDialogService
                 return;
             }
 
-            Application.EnableVisualStyles();
+            System.Windows.Forms.Application.EnableVisualStyles();
             visualStylesEnabled = true;
         }
     }

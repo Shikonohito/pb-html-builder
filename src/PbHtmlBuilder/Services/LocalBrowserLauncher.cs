@@ -1,19 +1,19 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
-using Microsoft.Extensions.Options;
+using Pb.Builder.Infrastructure.Windows.Configuration;
 
 namespace PbHtmlBuilder.Services;
 
 public sealed class LocalBrowserLauncher(
-    IOptions<LocalAppOptions> localAppOptions,
+    LocalAppOptions localAppOptions,
     IHostApplicationLifetime lifetime,
     IServer server,
     ILogger<LocalBrowserLauncher> logger) : IHostedService
 {
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        if (!localAppOptions.Value.LaunchBrowser)
+        if (!localAppOptions.LaunchBrowser)
         {
             return Task.CompletedTask;
         }
@@ -26,7 +26,7 @@ public sealed class LocalBrowserLauncher(
 
     private void OpenBrowser()
     {
-        var url = localAppOptions.Value.PreferredUrl;
+        var url = localAppOptions.PreferredUrl;
         if (string.IsNullOrWhiteSpace(url))
         {
             var addresses = server.Features.Get<IServerAddressesFeature>()?.Addresses;

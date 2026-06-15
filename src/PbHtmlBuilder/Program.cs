@@ -1,5 +1,14 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting.StaticWebAssets;
+using Pb.Builder.Application.Commands;
+using Pb.Builder.Application.Extensibility;
+using Pb.Builder.Application.Ports;
+using Pb.Builder.Application.Services;
+using Pb.Builder.Application.Session;
+using Pb.Builder.Application.UseCases;
+using Pb.Builder.Infrastructure.Windows.Configuration;
+using Pb.Builder.Infrastructure.Windows.Dialogs;
+using Pb.Builder.Infrastructure.Windows.FileSystem;
 using PbHtmlBuilder.Components;
 using PbHtmlBuilder.Services;
 
@@ -29,8 +38,15 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(dataProtectionDirectory);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-builder.Services.AddSingleton<FolderDialogService>();
-builder.Services.AddSingleton<ProjectDraftStore>();
+builder.Services.AddSingleton(localAppOptions);
+builder.Services.AddSingleton(DocumentTypeRegistry.CreateDefault());
+builder.Services.AddSingleton<DocumentStore>();
+builder.Services.AddSingleton<CommandDispatcher>();
+builder.Services.AddSingleton<NewDocumentUseCase>();
+builder.Services.AddSingleton<IClock, SystemClock>();
+builder.Services.AddSingleton<IIdGenerator, GuidIdGenerator>();
+builder.Services.AddSingleton<IFileDialogService, WindowsFileDialogService>();
+builder.Services.AddSingleton<IProjectPathService, WindowsProjectPathService>();
 builder.Services.AddHostedService<LocalBrowserLauncher>();
 
 var app = builder.Build();
@@ -46,6 +62,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
+    .AddAdditionalAssemblies(typeof(Pb.Builder.UI.Components.Pages.Home).Assembly)
     .AddInteractiveServerRenderMode();
 
 app.Run();

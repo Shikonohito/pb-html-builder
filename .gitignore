@@ -1,7 +1,53 @@
-bin/
-obj/
-src/PbHtmlBuilder/App_Data/
-src/PbHtmlBuilder/*.log
-temp/
+# Build output
+[Bb]in/
+[Oo]bj/
+publish/
+
+# Logs and local runtime state
+*.log
+*.binlog
 logs/
+temp/
+
+# Test and coverage output
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+coverage.cobertura.xml
+
+# NuGet package output
+*.nupkg
+*.snupkg
+
+# Local app data
+src/PbHtmlBuilder/App_Data/
+projects/
+templates/
 reports/
+
+# User-specific IDE files
+.vs/
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Environment and local override files
+.env
+.env.*
+!.env.example
+*.local.json
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini

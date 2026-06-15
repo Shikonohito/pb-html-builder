@@ -1,4 +1,4 @@
-﻿@page "/Error"
+@page "/Error"
 @using System.Diagnostics
 
 <PageTitle>Error</PageTitle>
@@ -26,13 +26,10 @@
     </p>
 </main>
 
-@code{
-    [CascadingParameter]
-    private HttpContext? HttpContext { get; set; }
-
+@code {
     private string? RequestId { get; set; }
     private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 
     protected override void OnInitialized() =>
-        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+        RequestId = Activity.Current?.Id;
 }

@@ -1,4 +1,7 @@
-namespace PbHtmlBuilder.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+
+namespace Pb.Builder.Infrastructure.Windows.Configuration;
 
 public sealed class LocalAppOptions
 {
