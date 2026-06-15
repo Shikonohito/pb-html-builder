@@ -1,0 +1,1707 @@
+# Архитектура PB HTML Builder
+
+Дата: 2026-06-13
+Источник: vision-2026-06-13.txt
+
+Этот документ описывает архитектуру проекта, которую нужно использовать как рабочий контракт при создании и поддержании PB HTML Builder. Цель архитектуры - сделать продукт расширяемым: новые типы блоков, новые document flows, новые проверки и новые runtime-возможности должны добавляться через ограниченное число понятных точек расширения, а не через правки по всему приложению.
+
+Документ не заменяет детальную JSON schema и UI-макеты, но задаёт структуру решения, границы модулей, классы, сервисы, правила зависимостей, требования к качеству и порядок добавления новых возможностей.
+
+
+## 1. Базовые архитектурные решения
+
+1. Builder является локальным Windows-приложением, распространяемым как portable app folder.
+
+2. UI строится на Blazor и запускается внутри WebView2 shell. Production builder не должен требовать локальный HTTP server, облако, аккаунты или внешнюю серверную платформу.
+
+3. Приложение поддерживает один активный проект и одну рабочую поверхность. Многодокументный режим, вкладки и совместное редактирование не закладываются в v1.
+
+4. Источник истины во время authoring - C# document model внутри Central Document Store. DOM WebView2, Blazor component state и JavaScript state не являются источником истины для документа.
+
+5. Все изменения документа проходят через explicit command objects. Команды являются основой undo/redo, dirty state, autosave, audit/debug logging и предсказуемого тестирования.
+
+6. Domain logic, validation, save/open, artifact generation, content hash, answer matching и grading rules остаются в C#. JavaScript используется только на границах браузера: Selection API, drag-and-drop helpers, File System Access API, Monaco, Pyodide wrappers и generated HTML runtime.
+
+7. Generated HTML является основным артефактом повторного открытия проекта. Он содержит pre-rendered DOM для быстрого показа студенту и readable `pb-project` JSON для exact reopen в builder.
+
+8. Assessment всегда разделяет public student HTML и private teacher key JSON. Correct answers, autotests, expected code, путь или имя key file не попадают в student HTML.
+
+9. Runtime generated HTML остаётся thin: общие CSS/JS, Monaco, Pyodide и feature modules загружаются извне с pinned runtime version. В dev-режиме допускается local static server для runtime assets.
+
+10. Расширяемость строится через registries/descriptors:
+    - registry типов документов;
+    - registry content block types;
+    - registry graded item handlers;
+    - registry validation rules;
+    - registry runtime feature modules.
+
+11. Архитектура должна поддерживать strict open. Builder открывает только файлы с валидным PB manifest, текущей schemaVersion и полным набором стабильных ids.
+
+12. Для нового проекта рекомендуется целиться в актуальный стабильный .NET для Windows desktop, например `net10.0-windows`, если SDK и окружение это поддерживают. Если реализация уже создана под другой LTS/STС target, менять target framework нужно только отдельным архитектурным решением.
+
+
+## 2. Общая форма решения
+
+Рекомендуемая структура repository:
+
+```text
+pb-html-builder/
+  src/
+    Pb.Builder.Shell/
+    Pb.Builder.UI/
+    Pb.Builder.Application/
+    Pb.Builder.Domain/
+    Pb.Builder.Contracts/
+    Pb.Builder.Artifacts/
+    Pb.Builder.Infrastructure.Windows/
+    Pb.Runtime.Assets/
+  tests/
+    Pb.Builder.Domain.Tests/
+    Pb.Builder.Application.Tests/
+    Pb.Builder.Artifacts.Tests/
+    Pb.Builder.Serialization.Tests/
+    Pb.Builder.Security.Tests/
+    Pb.Builder.E2E.Tests/
+    Pb.Runtime.E2E.Tests/
+  samples/
+    theory/
+    practice/
+    assessment/
+    verified/
+  tools/
+    runtime-dev-server/
+    packaging/
+    schema/
+  docs/
+    architecture/
+    decisions/
+    schemas/
+```
+
+Названия `Pb.*` можно заменить на выбранный product namespace, но роли проектов должны сохраниться.
+
+
+## 3. Правила зависимостей
+
+Главное правило: зависимости направлены внутрь, к domain model. UI и infrastructure зависят от application abstractions, но domain не знает о UI, файловой системе, WebView2, JSON, HTML или JavaScript.
+
+Рекомендуемый граф зависимостей:
+
+```text
+Pb.Builder.Shell
+  -> Pb.Builder.UI
+  -> Pb.Builder.Application
+  -> Pb.Builder.Infrastructure.Windows
+  -> Pb.Builder.Artifacts
+
+Pb.Builder.UI
+  -> Pb.Builder.Application
+  -> Pb.Builder.Domain
+
+Pb.Builder.Application
+  -> Pb.Builder.Domain
+  -> Pb.Builder.Contracts
+
+Pb.Builder.Artifacts
+  -> Pb.Builder.Domain
+  -> Pb.Builder.Contracts
+
+Pb.Builder.Infrastructure.Windows
+  -> Pb.Builder.Application
+  -> Pb.Builder.Domain
+  -> Pb.Builder.Artifacts
+
+Pb.Builder.Contracts
+  -> Pb.Builder.Domain where useful, or pure DTOs if schema isolation is stricter
+
+Pb.Builder.Domain
+  -> BCL only
+
+Pb.Runtime.Assets
+  -> no C# project dependency
+```
+
+Запрещённые направления:
+
+1. `Domain` не зависит от Blazor, WebView2, filesystem, logging, JS interop, Monaco, Pyodide или HTML parser.
+
+2. `Application` не вызывает конкретные Windows dialogs, не пишет файлы напрямую и не знает о конкретном WebView2 implementation.
+
+3. `UI` не мутирует document model напрямую. Любое изменение документа отправляется как command.
+
+4. `Artifacts` не принимает решения authoring workflow. Он генерирует, читает и проверяет артефакты по данным, которые передал application layer.
+
+5. `Runtime.Assets` не становится скрытым источником бизнес-правил. Он исполняет уже сериализованную модель и отвечает только за browser-side behavior.
+
+
+## 4. Projects и ответственность
+
+### 4.1. Pb.Builder.Domain
+
+Чистая доменная модель и бизнес-правила. Здесь должны жить:
+
+```text
+Documents/
+  Document.cs
+  DocumentManifest.cs
+  DocumentSettings.cs
+  DocumentType.cs
+  DocumentId.cs
+  SchemaVersion.cs
+  RuntimeVersion.cs
+
+Sections/
+  Section.cs
+  SectionId.cs
+  SectionNumbering.cs
+  SectionMap.cs
+
+Blocks/
+  ContentBlock.cs
+  BlockId.cs
+  BlockType.cs
+  ParagraphBlock.cs
+  ListBlock.cs
+  TableBlock.cs
+  MediaBlock.cs
+  SpecialBlock.cs
+  MonacoBlock.cs
+  QuestionBlock.cs
+  BlockRole.cs
+  BlockMode.cs
+
+RichText/
+  InlineContent.cs
+  InlineSpan.cs
+  TextMark.cs
+  LinkMark.cs
+  RichTextNormalizer.cs
+
+Grading/
+  GradedItem.cs
+  GradedItemId.cs
+  QuestionKind.cs
+  ChoiceOption.cs
+  AutotestSuite.cs
+  AutotestCase.cs
+  TextAnswerRule.cs
+  TeacherKey.cs
+  AnswerState.cs
+  ReviewState.cs
+  GradeResult.cs
+
+Validation/
+  ValidationIssue.cs
+  ValidationSeverity.cs
+  ValidationCode.cs
+  ValidationScope.cs
+
+Artifacts/
+  ContentHash.cs
+  ArtifactKind.cs
+  ArtifactPathSet.cs
+```
+
+Domain classes должны выражать инварианты:
+
+1. Stable ids создаются один раз и не меняются при переименовании, перестановке или сохранении.
+
+2. Computed numbers секций не являются identity и вычисляются из порядка.
+
+3. В одной секции может быть максимум один graded task.
+
+4. Practice не содержит question blocks в v1.
+
+5. Theory не содержит graded Monaco blocks.
+
+6. Assessment public document не содержит correct answers, private tests или expected code.
+
+7. Rich text хранится как Inline AST, а не как raw HTML.
+
+8. URL policy выражается как доменное правило, а не как только UI-проверка.
+
+Domain должен быть максимально тестируемым без Blazor и без файловой системы.
+
+
+### 4.2. Pb.Builder.Contracts
+
+Контракты сериализации для `pb-project`, `pb-answer-state`, `pb-review-state` и teacher key JSON. Этот проект защищает domain model от случайной привязки к конкретной JSON shape.
+
+Рекомендуемые папки:
+
+```text
+ProjectJson/
+  ProjectDocumentDto.cs
+  ProjectManifestDto.cs
+  ProjectSectionDto.cs
+  ProjectBlockDto.cs
+  ProjectRichTextDto.cs
+  ProjectJsonContext.cs
+
+TeacherKeyJson/
+  TeacherKeyDto.cs
+  TeacherKeyItemDto.cs
+  TeacherKeyJsonContext.cs
+
+AnswerStateJson/
+  AnswerStateDto.cs
+  AcceptedAnswerDto.cs
+  AnswerStateJsonContext.cs
+
+ReviewStateJson/
+  ReviewStateDto.cs
+  ReviewItemDto.cs
+  ReviewStateJsonContext.cs
+
+Mapping/
+  ProjectDtoMapper.cs
+  TeacherKeyDtoMapper.cs
+  AnswerStateDtoMapper.cs
+  ReviewStateDtoMapper.cs
+```
+
+Требования:
+
+1. DTO должны быть versioned и пригодны для snapshot tests.
+
+2. Использовать `System.Text.Json` с явными converters для ids, enums, dates и discriminated unions.
+
+3. Для v1 unsupported schemaVersion открывается с blocking error. Но код должен быть подготовлен к будущему `IDocumentMigration`, чтобы v2 не потребовал переписать open pipeline.
+
+4. Unknown block type в builder должен приводить к понятной ошибке открытия, а не к silently dropped content.
+
+5. JSON должен оставаться readable. Сжатие metadata в v1 не используется.
+
+
+### 4.3. Pb.Builder.Application
+
+Application layer содержит use cases, command model, session state и orchestration. Здесь нет Blazor components и нет прямых вызовов Windows APIs.
+
+Рекомендуемые папки:
+
+```text
+Session/
+  DocumentSession.cs
+  DocumentStore.cs
+  DocumentSnapshot.cs
+  DirtyStateTracker.cs
+  SelectionState.cs
+
+Commands/
+  IDocumentCommand.cs
+  IUndoableCommand.cs
+  CommandDispatcher.cs
+  CommandResult.cs
+  UndoRedoManager.cs
+  CommandBatch.cs
+  AddSectionCommand.cs
+  RenameSectionCommand.cs
+  MoveSectionCommand.cs
+  AddBlockCommand.cs
+  DeleteBlockCommand.cs
+  UpdateRichTextCommand.cs
+  UpdateBlockSettingsCommand.cs
+  UpdateTeacherKeyCommand.cs
+
+UseCases/
+  NewDocumentUseCase.cs
+  OpenProjectUseCase.cs
+  SaveProjectUseCase.cs
+  SaveProjectAsUseCase.cs
+  CreateVerifiedAssessmentUseCase.cs
+  ValidateProjectUseCase.cs
+  CheckLinksAndMediaUseCase.cs
+
+Autosave/
+  AutosaveService.cs
+  RecoveryService.cs
+  AutosaveSlotPolicy.cs
+
+Profiles/
+  BuilderProfileService.cs
+  RecentProjectsService.cs
+
+Validation/
+  ValidationEngine.cs
+  IValidationRule.cs
+  ValidationRuleRegistry.cs
+
+Extensibility/
+  IDocumentTypeModule.cs
+  DocumentTypeRegistry.cs
+  IBlockTypeModule.cs
+  BlockTypeRegistry.cs
+  IGradingHandler.cs
+  GradingHandlerRegistry.cs
+  IRuntimeFeatureContributor.cs
+```
+
+Главные сервисы:
+
+1. `DocumentStore` хранит текущую `DocumentSession`, публикует read-only snapshot для UI и принимает изменения только через `CommandDispatcher`.
+
+2. `CommandDispatcher` выполняет команды, формирует undo record, обновляет dirty state и отправляет change notifications.
+
+3. `UndoRedoManager` хранит command-level историю. Структурные действия являются отдельными шагами, набор текста группируется через debounce/blur и `CommandBatch`.
+
+4. `ValidationEngine` запускает правила из registry. Ошибки блокируют save/export, warnings разрешают save/export.
+
+5. `SaveProjectUseCase` координирует validation, HTML generation, teacher key generation, content hash, atomic write и recent projects.
+
+6. `OpenProjectUseCase` читает HTML, извлекает `pb-project`, проверяет manifest/schema/ids и создаёт `DocumentSession`. DOM не используется как источник истины.
+
+7. `CreateVerifiedAssessmentUseCase` принимает student assessment HTML, teacher key JSON и output path, проверяет `documentId + contentHash`, запускает grading и создаёт verified HTML с `pb-review-state`.
+
+8. `AutosaveService` пишет snapshots рядом с проектом, не заменяя основной HTML.
+
+9. `RecoveryService` показывает возможные snapshots при старте/open и никогда не восстанавливает их silently.
+
+Application abstractions для infrastructure:
+
+```text
+IProjectFileReader
+IProjectFileWriter
+IAtomicFileWriter
+IFileDialogService
+IBuilderProfileStore
+IRecentProjectsStore
+ILocalLogWriter
+IClock
+IIdGenerator
+IPythonExecutionBridge
+IRuntimeAssetResolver
+```
+
+
+### 4.4. Pb.Builder.Artifacts
+
+Artifact layer отвечает за generated HTML, teacher key JSON, answer/review state blocks, content hash и parsing.
+
+Рекомендуемые папки:
+
+```text
+Html/
+  HtmlArtifactReader.cs
+  HtmlArtifactWriter.cs
+  HtmlDocumentRenderer.cs
+  HtmlTemplateRenderer.cs
+  MetadataScriptBlockWriter.cs
+  MetadataScriptBlockReader.cs
+  RuntimeReferenceWriter.cs
+
+Rendering/
+  IBlockHtmlRenderer.cs
+  BlockHtmlRendererRegistry.cs
+  ParagraphHtmlRenderer.cs
+  ListHtmlRenderer.cs
+  TableHtmlRenderer.cs
+  MediaHtmlRenderer.cs
+  SpecialHtmlRenderer.cs
+  MonacoHtmlRenderer.cs
+  QuestionHtmlRenderer.cs
+
+Runtime/
+  RuntimeManifest.cs
+  RuntimeAssetResolver.cs
+  RuntimeFeatureSet.cs
+  RuntimeIntegrityManifest.cs
+
+Hashing/
+  ContentHashService.cs
+  AssessmentHashProjection.cs
+
+Keys/
+  TeacherKeyWriter.cs
+  TeacherKeyReader.cs
+  AssessmentKeyLeakScanner.cs
+
+Validation/
+  ArtifactValidationService.cs
+```
+
+Требования:
+
+1. HTML нужно генерировать структурно, через template/DOM writer/HTML builder с обязательным encoding пользовательского текста. Нельзя собирать пользовательский HTML конкатенацией строк.
+
+2. Для чтения HTML использовать реальный HTML parser. Не искать `pb-project` регулярными выражениями по всему файлу.
+
+3. Generated HTML должен содержать:
+   - pre-rendered content DOM;
+   - `script type="application/json" id="pb-project"`;
+   - для assessment: `script type="application/json" id="pb-answer-state"`;
+   - для verified: `script type="application/json" id="pb-review-state"`;
+   - pinned runtime links.
+
+4. `ContentHashService` считает hash по оцениваемой структуре assessment, а не по всему HTML-файлу.
+
+5. `AssessmentKeyLeakScanner` должен проверять, что student HTML не содержит correct answers, private autotests, expected code, teacher key path/name и другие private fields.
+
+6. HTML renderer не должен знать о Blazor editor components. Он работает только с domain snapshot и runtime feature descriptors.
+
+
+### 4.5. Pb.Builder.Infrastructure.Windows
+
+Windows-specific реализация внешних портов.
+
+Рекомендуемые папки:
+
+```text
+FileSystem/
+  WindowsProjectFileReader.cs
+  WindowsProjectFileWriter.cs
+  AtomicFileWriter.cs
+  WindowsPathValidator.cs
+
+Dialogs/
+  WindowsFileDialogService.cs
+  SaveDiscardCancelPrompt.cs
+
+Profile/
+  JsonBuilderProfileStore.cs
+  JsonRecentProjectsStore.cs
+
+Logging/
+  LocalLogWriter.cs
+  LogPathProvider.cs
+
+WebView/
+  WebViewHostOptions.cs
+  WebViewScriptBridge.cs
+
+RuntimeDev/
+  LocalRuntimeServerOptions.cs
+  LocalRuntimeAssetResolver.cs
+```
+
+Требования:
+
+1. Поддерживать Unicode paths, пробелы и кириллицу.
+
+2. Atomic save для assessment должен писать temp HTML и temp key JSON, проверять оба результата и только потом заменять целевые файлы.
+
+3. Логи пишутся локально в root builder logs directory. По умолчанию не писать student answer content.
+
+4. `IFileDialogService` и prompt-сервисы не должны протекать в domain/application.
+
+5. Runtime dev server допускается только для разработки и не является зависимостью student generated HTML.
+
+
+### 4.6. Pb.Builder.UI
+
+Blazor authoring UI. UI должен быть WYSIWYG-first: inline editing и inspector дополняют друг друга, но inspector не заменяет редактирование на поверхности.
+
+Рекомендуемые папки:
+
+```text
+App/
+  App.razor
+  Routes.razor
+  AppShell.razor
+
+Layout/
+  WorkspaceLayout.razor
+  TopBar.razor
+  Sidebar.razor
+  MainSurface.razor
+  InspectorPanel.razor
+  StatusBanner.razor
+
+Start/
+  StartPage.razor
+  NewDocumentPanel.razor
+  NewVerifiedAssessmentPanel.razor
+  RecentProjectsList.razor
+
+Editor/
+  EditorSurface.razor
+  SectionEditor.razor
+  SectionMapEditor.razor
+  BlockHost.razor
+  BlockActionBar.razor
+  InsertionLine.razor
+  ContextMenuHost.razor
+
+Blocks/
+  ParagraphBlockEditor.razor
+  ListBlockEditor.razor
+  TableBlockEditor.razor
+  MediaBlockEditor.razor
+  SpecialBlockEditor.razor
+  MonacoBlockEditor.razor
+  QuestionBlockEditor.razor
+
+Inspectors/
+  DocumentSettingsInspector.razor
+  SectionInspector.razor
+  MonacoInspector.razor
+  QuestionInspector.razor
+  AutotestInspector.razor
+
+RichText/
+  RichTextEditor.razor
+  FloatingTextToolbar.razor
+  LinkEditorPopover.razor
+
+Interop/
+  SelectionInterop.cs
+  DragDropInterop.cs
+  MonacoInterop.cs
+  PyodideInterop.cs
+  FileSystemAccessInterop.cs
+
+State/
+  UiState.cs
+  FocusState.cs
+  ToastState.cs
+```
+
+UI rules:
+
+1. Components read state from `DocumentStore` snapshots and send commands. They must not mutate block objects directly.
+
+2. Block components are selected through `BlockTypeRegistry`. Adding a block type should not require editing a giant `switch` in every surface.
+
+3. Inspector components are optional per block type, but every complex setting must have either inspector UI or an inline expansion.
+
+4. Hover/right-click actions must be duplicated by explicit selected-block actions and keyboard-accessible alternatives.
+
+5. Icon buttons require tooltip and `aria-label`.
+
+6. Blazor components can keep short-lived UI state such as focus, open popover, temporary field text and drag hover. Persisted document state belongs only to domain/session.
+
+7. JS interop wrappers are thin. They translate browser events into typed C# messages and do not implement domain decisions.
+
+
+### 4.7. Pb.Builder.Shell
+
+Composition root and Windows host. Shell wires DI, logging, WebView2, Blazor root component, runtime asset mode and application startup.
+
+Рекомендуемые файлы:
+
+```text
+Program.cs
+App.xaml / App.axaml / equivalent host file
+MainWindow.xaml / equivalent shell window
+ServiceCollectionExtensions.cs
+AppStartup.cs
+```
+
+Shell responsibilities:
+
+1. Register services in DI.
+
+2. Configure local logging.
+
+3. Configure WebView2 environment and permissions required by builder.
+
+4. Select runtime asset resolver: pinned GitHub Pages for generated artifacts, local static server only in dev mode.
+
+5. Open initial route/start page.
+
+6. Enforce single active project workflow at application level.
+
+`Program.cs` or equivalent startup file must stay thin. Registration can be split into extension methods:
+
+```text
+AddBuilderDomain()
+AddBuilderApplication()
+AddBuilderArtifacts()
+AddBuilderWindowsInfrastructure()
+AddBuilderUi()
+```
+
+
+### 4.8. Pb.Runtime.Assets
+
+Static runtime for generated HTML. Рекомендуется TypeScript or modern JavaScript with a build step that produces versioned bundles.
+
+Рекомендуемая структура:
+
+```text
+runtime/
+  src/
+    core/
+      bootstrap.ts
+      manifest.ts
+      metadata.ts
+      theme.ts
+      navigation.ts
+      errors.ts
+    features/
+      monaco/
+        monaco-loader.ts
+        monaco-block.ts
+      pyodide/
+        pyodide-worker.ts
+        pyodide-runner.ts
+        harness.ts
+      assessment/
+        answer-state.ts
+        file-access.ts
+        download-updated-html.ts
+      practice/
+        practice-grading.ts
+      verified/
+        review-rendering.ts
+    styles/
+      base.css
+      theory.css
+      practice.css
+      assessment.css
+      verified.css
+  dist/
+    v{runtimeVersion}/
+      core.js
+      core.css
+      feature-monaco.js
+      feature-pyodide.js
+      feature-assessment.js
+      integrity.json
+```
+
+Runtime rules:
+
+1. Core runtime handles metadata reading, theme, navigation, answer-state basics, status surfaces and error rendering.
+
+2. Monaco module loads only when document has code blocks. Monaco instances initialize lazy by viewport or first interaction.
+
+3. Pyodide loads only on first run/debug and executes in Web Worker with fresh namespace per run/test.
+
+4. Runtime must work from `file://` in Edge/Chrome for student-generated HTML.
+
+5. If core runtime fails, pre-rendered content remains visible where possible.
+
+6. If Monaco fails in assessment, code answer falls back to textarea so the student can submit.
+
+7. If File System Access API is unavailable or write permission is missing, runtime shows persistent banner and offers download updated HTML.
+
+8. Runtime never treats DOM as the only source of graded data. It reads structured metadata/state blocks.
+
+
+## 5. Core domain model
+
+### 5.1. DocumentSession
+
+`DocumentSession` represents one active project:
+
+```text
+DocumentSession
+  Document PublicDocument
+  TeacherKey? TeacherKeyDraft
+  AnswerState? AnswerState
+  ReviewState? ReviewState
+  ArtifactPathSet Paths
+  DocumentMode Mode
+  DirtyState DirtyState
+  DateTimeOffset OpenedAt
+```
+
+`PublicDocument` contains only data safe for generated HTML. Для assessment correct answers and private tests live in `TeacherKeyDraft`, not in blocks.
+
+`DocumentMode`:
+
+```text
+AuthoringTheory
+AuthoringPractice
+AuthoringAssessment
+AuthoringVerifiedAssessment
+ReadonlyVerifiedSource
+```
+
+
+### 5.2. Document
+
+`Document`:
+
+```text
+Document
+  DocumentManifest Manifest
+  DocumentSettings Settings
+  IReadOnlyList<Section> Sections
+  SectionMap? SectionMap
+  RuntimeOptions RuntimeOptions
+  ValidationMetadata ValidationMetadata
+```
+
+`DocumentManifest`:
+
+```text
+AppId
+DocumentType
+DocumentId
+SchemaVersion
+RuntimeVersion
+CreatedAt
+UpdatedAt
+GeneratedAt
+ContentHash?
+```
+
+`DocumentSettings`:
+
+```text
+Title
+TopicKicker
+Author
+CopyrightYear
+ThemeDefault
+AllowedPythonPackages
+PublicRuntimeOptions
+```
+
+
+### 5.3. Blocks
+
+Base model:
+
+```text
+ContentBlock
+  BlockId Id
+  BlockType Type
+  BlockMetadata Metadata
+```
+
+Concrete block records:
+
+1. `ParagraphBlock`: `InlineContent Body`.
+
+2. `ListBlock`: ordered/unordered flag and `IReadOnlyList<InlineContent> Items`.
+
+3. `TableBlock`: rows, columns, optional header row, cells with `InlineContent`.
+
+4. `MediaBlock`: image/video kind, URL, alt/title metadata.
+
+5. `SpecialBlock`: label, h3 title, nested body blocks from allowed subset.
+
+6. `MonacoBlock`: title, role, mode, default code, run/debug flags, output policy, autotest reference where applicable.
+
+7. `QuestionBlock`: title, body, question kind, public options/input config, public feedback policy.
+
+Block nesting rules must be explicit. In v1:
+
+1. Section body can contain all common blocks allowed by document type.
+
+2. Special body can contain paragraph, list, table, media and Monaco example/self-run.
+
+3. Question body can contain paragraph, list, table, media and Monaco example/self-run.
+
+4. Table cells contain only Inline AST, not nested content blocks.
+
+5. Question body cannot contain graded Monaco block.
+
+
+### 5.4. TeacherKey
+
+`TeacherKey` stores private assessment data:
+
+```text
+TeacherKey
+  DocumentId
+  ContentHash
+  SchemaVersion
+  RuntimeVersion
+  IReadOnlyList<TeacherKeyItem> Items
+  GeneratedAt
+```
+
+`TeacherKeyItem`:
+
+```text
+GradedItemId
+SectionId
+BlockId
+GradedItemType
+CorrectChoiceOptionIds?
+AcceptedTextAnswers?
+AutotestSuite?
+ExpectedCode?
+GradingConfig
+```
+
+Teacher key never stores filesystem path inside student HTML. Pairing is only `documentId + contentHash`.
+
+
+### 5.5. AnswerState
+
+`AnswerState` is public student-submitted state:
+
+```text
+AnswerState
+  DocumentId
+  SchemaVersion
+  IReadOnlyList<AcceptedAnswer> AcceptedAnswers
+  UpdatedAt
+```
+
+`AcceptedAnswer` stores only the last explicit submit:
+
+1. Choice: selected option ids.
+
+2. Text input: entered text.
+
+3. Code task: submitted code.
+
+Drafts before `Ответить` are not part of `AnswerState`; runtime may store them in localStorage/IndexedDB.
+
+
+### 5.6. ReviewState
+
+`ReviewState` is generated by verified assessment workflow:
+
+```text
+ReviewState
+  DocumentId
+  ContentHash
+  ScoreSummary
+  IReadOnlyList<ReviewItem> Items
+  GeneratedAt
+```
+
+`ReviewItem`:
+
+```text
+GradedItemId
+AutoResult
+ManualOverride?
+FinalStatus
+AutotestResults?
+TeacherComment?
+RevealedCorrectData?
+```
+
+Manual override wins over auto-result, but original auto-result remains stored.
+
+
+## 6. Command architecture
+
+Commands are the only write API for authoring state.
+
+Recommended command contracts:
+
+```text
+IDocumentCommand
+  string DisplayName
+  CommandScope Scope
+  CommandMergeKey? MergeKey
+  CommandResult Execute(DocumentSession session)
+
+IUndoableCommand : IDocumentCommand
+  void Undo(DocumentSession session, CommandResult result)
+```
+
+`CommandScope` examples:
+
+```text
+DocumentStructure
+RichText
+BlockSettings
+TeacherKey
+Paths
+Review
+```
+
+Command rules:
+
+1. Commands validate local preconditions before mutation.
+
+2. Commands return enough data to undo without re-reading UI state.
+
+3. Text input commands can be merged by debounce/blur through `MergeKey`.
+
+4. Save/open are use cases, not ordinary undoable document commands.
+
+5. Commands that affect assessment correct answers modify `TeacherKeyDraft`, not `PublicDocument`.
+
+6. Commands that change graded structure must cause `contentHash` recalculation before save.
+
+7. UI can optimistically update only after command success. Failed command returns user-facing error through application result.
+
+Core command examples:
+
+```text
+CreateDocumentCommand
+UpdateDocumentSettingsCommand
+AddSectionCommand
+RenameSectionCommand
+MoveSectionCommand
+DeleteSectionCommand
+AddBlockCommand
+DuplicateBlockCommand
+MoveBlockCommand
+DeleteBlockCommand
+UpdateParagraphTextCommand
+UpdateListItemCommand
+UpdateTableCellCommand
+UpdateMediaUrlCommand
+UpdateSpecialBlockLabelCommand
+UpdateMonacoSettingsCommand
+UpdateQuestionOptionsCommand
+SetAssessmentCorrectChoicesCommand
+SetTextAcceptedAnswersCommand
+SetCodeAutotestsCommand
+SetReviewManualOverrideCommand
+SetTeacherCommentCommand
+```
+
+
+## 7. Extensibility model
+
+### 7.1. BlockTypeModule
+
+Every block type should be registered through one module:
+
+```text
+IBlockTypeModule
+  BlockType Type
+  string DisplayName
+  bool IsAllowed(DocumentType documentType, BlockContainerContext context)
+  ContentBlock CreateDefault(BlockCreationContext context)
+  IReadOnlyList<IValidationRule> ValidationRules
+  IBlockHtmlRenderer HtmlRenderer
+  RuntimeFeatureSet RequiredRuntimeFeatures(ContentBlock block)
+  Type EditorComponentType
+  Type? InspectorComponentType
+```
+
+Adding a new block requires:
+
+1. Domain model and invariants.
+
+2. DTO shape and mapping.
+
+3. Default factory.
+
+4. Validation rules.
+
+5. Commands for editable properties.
+
+6. Blazor editor component.
+
+7. Inspector component if needed.
+
+8. HTML renderer.
+
+9. Runtime feature module if the generated HTML needs behavior.
+
+10. Unit, serialization, snapshot and E2E tests.
+
+This prevents new block logic from spreading across arbitrary `switch` statements.
+
+
+### 7.2. DocumentTypeModule
+
+Theory, practice, assessment and verified assessment are document type modules:
+
+```text
+IDocumentTypeModule
+  DocumentType Type
+  DocumentDefaults CreateDefaults(NewDocumentRequest request)
+  bool AllowsBlock(BlockType blockType, BlockContainerContext context)
+  ArtifactPolicy ArtifactPolicy
+  RuntimeFeatureSet BaseRuntimeFeatures
+  IReadOnlyList<IValidationRule> ValidationRules
+  IReadOnlyList<IWorkspaceSurfaceContributor> UiContributors
+  IHtmlLayoutRenderer LayoutRenderer
+```
+
+Responsibilities:
+
+1. Define allowed blocks and section rules.
+
+2. Define generated layout: topbar, sidebar, main area and document-specific status UI.
+
+3. Define save artifacts:
+   - theory: one HTML;
+   - practice: one HTML;
+   - assessment: student HTML + teacher key JSON;
+   - verified: readonly HTML with review state.
+
+4. Define required runtime modules.
+
+5. Provide document-specific validation rules.
+
+6. Contribute builder UI pieces, for example section map for theory or task status for practice.
+
+If a future similar solution adds a new HTML type, it should start as a new `IDocumentTypeModule`, not as conditional logic inside existing flows.
+
+
+### 7.3. GradingHandler
+
+Grading is polymorphic by graded item type:
+
+```text
+IGradingHandler
+  GradedItemType Type
+  GradeResult Grade(GradingContext context)
+  IReadOnlyList<IValidationRule> KeyValidationRules
+```
+
+Handlers:
+
+1. `ChoiceGradingHandler`: single and multi-answer; multi-answer uses exact set match.
+
+2. `TextInputGradingHandler`: normalization + accepted variants; optional case-insensitive mode.
+
+3. `CodeGradingHandler`: all autotests must pass; timeout, runtime error and failed expected are incorrect.
+
+Missing answer, missing key or mismatched block id returns `Ожидает проверки`.
+
+
+## 8. Save/open architecture
+
+### 8.1. Save flow
+
+`SaveProjectUseCase`:
+
+1. Receives current `DocumentSession`.
+
+2. Runs `ValidationEngine`.
+
+3. Blocks save on errors.
+
+4. Computes `contentHash` if document has graded assessment structure.
+
+5. Builds public `pb-project` DTO.
+
+6. For assessment, builds private teacher key DTO separately.
+
+7. Renders pre-rendered HTML DOM.
+
+8. Injects metadata/state script blocks.
+
+9. Injects pinned runtime references and SRI where available.
+
+10. Runs key leak scanner for student assessment HTML.
+
+11. Writes artifacts:
+    - single HTML for theory/practice/verified;
+    - atomic pair write for assessment HTML + key JSON.
+
+12. Updates dirty state, generatedAt, recent projects and autosave baseline.
+
+13. Reports result through application result object; UI displays toast/banner.
+
+
+### 8.2. Open flow
+
+`OpenProjectUseCase`:
+
+1. If current session has unsaved changes, asks Shell/UI for `Save / Discard / Cancel`.
+
+2. Reads selected HTML as text.
+
+3. Uses HTML parser to find required PB script blocks.
+
+4. Deserializes `pb-project`.
+
+5. Validates manifest:
+   - `appId`;
+   - `documentType`;
+   - `documentId`;
+   - `schemaVersion`;
+   - `runtimeVersion`;
+   - stable ids;
+   - generatedAt;
+   - contentHash where required.
+
+6. Rejects unsupported schemaVersion in v1.
+
+7. Creates `DocumentSession` from metadata, not from DOM parsing.
+
+8. Loads answer/review state if the selected document type requires it.
+
+9. Does not mutate source file during failed open.
+
+10. Updates recent projects after successful open.
+
+
+### 8.3. Assessment save
+
+Assessment save is a special case:
+
+1. Public student HTML contains public document data and empty or current answer-state block.
+
+2. Teacher key JSON contains correct choices, accepted text answers, code autotests, expected code and grading config.
+
+3. Key path defaults to `same-stem.answers.key.json`, but can be overridden.
+
+4. Atomic write must avoid a state where new HTML is paired with old key or old HTML with new key.
+
+5. If one artifact fails, user receives clear error and existing artifacts remain unchanged as far as possible.
+
+
+### 8.4. Verified creation
+
+Verified creation:
+
+1. Inputs: student assessment HTML, teacher key JSON, output verified HTML path.
+
+2. Read student `pb-project` and `pb-answer-state`.
+
+3. Read teacher key JSON.
+
+4. Validate `documentId + contentHash`.
+
+5. Run question grading in C#.
+
+6. Run code grading through Pyodide/harness bridge with timeout and output cap.
+
+7. Build `ReviewState`.
+
+8. Render readonly verified HTML.
+
+9. Include correct answers/expected code only according to verified output policy.
+
+10. Save output HTML.
+
+
+## 9. Validation architecture
+
+Validation rules should be small, named and testable:
+
+```text
+IValidationRule
+  ValidationRuleId Id
+  ValidationScope Scope
+  bool AppliesTo(ValidationContext context)
+  IReadOnlyList<ValidationIssue> Validate(ValidationContext context)
+```
+
+Validation scopes:
+
+```text
+Document
+Section
+Block
+RichText
+ArtifactPaths
+TeacherKey
+AnswerState
+ReviewState
+Runtime
+Security
+```
+
+Blocking errors:
+
+1. Missing/invalid PB manifest fields.
+
+2. Unsupported schemaVersion.
+
+3. Duplicate ids.
+
+4. Broken section refs or anchors.
+
+5. Invalid URL scheme.
+
+6. Missing graded config.
+
+7. Assessment graded item without matching teacher key item.
+
+8. Public assessment HTML containing private key data.
+
+9. Invalid artifact pairing.
+
+10. More than one graded task in a section.
+
+Warnings:
+
+1. Empty optional content.
+
+2. Empty feedback.
+
+3. Unfinished media URL while editing.
+
+4. Unreachable external media/link from optional check.
+
+5. Large HTML size approaching target threshold.
+
+Validation should run:
+
+1. On command preconditions where local and cheap.
+
+2. Before save/export.
+
+3. During open.
+
+4. During verified creation.
+
+5. In tests against generated snapshots.
+
+
+## 10. UI architecture details
+
+### 10.1. Workspace layout
+
+All document types share shell structure:
+
+1. Topbar.
+
+2. Sidebar.
+
+3. Main authoring surface.
+
+4. Inspector.
+
+5. Context menu host.
+
+6. Toast/status banner host.
+
+Document type modules contribute differences:
+
+1. Theory adds section map and self-check question behavior.
+
+2. Practice adds task navigation/status and graded code debug flow.
+
+3. Assessment adds answer persistence status and hides correctness from student output.
+
+4. Verified adds readonly review output, score summary, comments and manual overrides.
+
+
+### 10.2. Selection model
+
+`SelectionState` stores:
+
+```text
+SelectedSectionId?
+SelectedBlockId?
+SelectedInlineRange?
+InspectorTarget
+ContextMenuTarget
+```
+
+Selection state is UI/session state, not persisted into generated HTML.
+
+Rules:
+
+1. Selected block shows action bar: add before/after, move, duplicate if supported, delete, settings.
+
+2. Hover insertion line with plus button is UI-only and dispatches `AddBlockCommand`.
+
+3. Drag-and-drop dispatches `MoveSectionCommand` or `MoveBlockCommand` only on drop.
+
+4. Keyboard alternatives must call the same commands.
+
+
+### 10.3. Rich text editor
+
+Rich text model is Inline AST. The editor may use Selection API, but it must translate browser selection into domain commands:
+
+```text
+ApplyMarkCommand
+RemoveMarkCommand
+UpdateInlineTextCommand
+SetLinkCommand
+RemoveLinkCommand
+```
+
+Rules:
+
+1. No raw HTML paste into model.
+
+2. Paste sanitizes text and supported marks only.
+
+3. Links pass URL policy before entering model.
+
+4. Floating toolbar is UI state; marks are persisted only through commands.
+
+
+### 10.4. Monaco and Pyodide in builder
+
+Monaco and Pyodide are browser-heavy dependencies and must stay behind interop services:
+
+```text
+IMonacoEditorBridge
+IPythonExecutionBridge
+ISelectionBridge
+IDragDropBridge
+IFileSystemAccessBridge
+```
+
+Rules:
+
+1. Monaco editor content is synchronized into C# through explicit commands.
+
+2. Long Python work does not block UI event path.
+
+3. Pyodide execution uses timeout and output cap.
+
+4. Practice debug uses structured autotest schema; builder generates harness rather than storing arbitrary JS.
+
+
+## 11. Generated HTML runtime architecture
+
+Generated HTML is not a Blazor app. It is static HTML with runtime JS modules.
+
+Runtime bootstrap:
+
+1. Load core bundle.
+
+2. Read `pb-project`.
+
+3. Validate minimal runtime compatibility.
+
+4. Apply theme.
+
+5. Initialize navigation/sidebar.
+
+6. Detect feature needs from metadata.
+
+7. Lazy-load Monaco/Pyodide/assessment modules when needed.
+
+8. Render runtime status and errors into pre-rendered containers.
+
+Runtime state rules:
+
+1. Theory and practice do not persist student state across sessions.
+
+2. Assessment persists accepted answers only after explicit submit.
+
+3. Drafts can use browser storage but do not enter `pb-answer-state`.
+
+4. Theme preference uses browser storage and is not answer state.
+
+5. Multi-tab assessment is last write wins in v1.
+
+6. Runtime does not attempt lock management in v1.
+
+Runtime failure rules:
+
+1. Core failure: content remains readable.
+
+2. Monaco failure in theory/practice/verified: inline error + retry.
+
+3. Monaco failure in assessment: textarea fallback for answer entry.
+
+4. Pyodide failure: run/debug disabled + inline error + retry.
+
+5. External media failure does not break document.
+
+
+## 12. Security and privacy architecture
+
+Security requirements:
+
+1. Raw HTML/JS content is prohibited.
+
+2. Rich text is sanitized and represented structurally.
+
+3. Links allow `http`, `https`, `mailto`.
+
+4. Media allows `https`.
+
+5. Dangerous schemes such as `javascript:` are blocked.
+
+6. Assessment student HTML never contains correct answers, private tests, expected code, teacher key path or teacher key file name.
+
+7. Practice hidden tests are only UI-hidden, not a security boundary. This must be visible in code comments/docs and tests.
+
+8. Logs do not include student answer content by default.
+
+9. No telemetry, crash reporting or analytics.
+
+10. Generated HTML runtime must not send data over network automatically except loading pinned runtime/assets and user-authored external media.
+
+Security test categories:
+
+1. Serialization leak tests.
+
+2. Snapshot tests for generated student assessment HTML.
+
+3. URL sanitization tests.
+
+4. Paste sanitization tests.
+
+5. Open invalid/malicious PB HTML tests.
+
+6. File path and atomic write tests.
+
+
+## 13. Packaging and deployment
+
+Builder packaging:
+
+1. Portable Windows app folder.
+
+2. Include WebView2 dependency handling or clear prerequisite strategy.
+
+3. Include local logs directory strategy.
+
+4. Include default profile file creation.
+
+5. Include pinned runtime version configuration.
+
+6. Do not include dev-only runtime server in production package unless explicitly hidden behind dev flag.
+
+Generated runtime deployment:
+
+1. Runtime assets published to GitHub Pages under versioned paths.
+
+2. Generated HTML pins exact runtime version.
+
+3. Own CSS/JS should use SRI where possible.
+
+4. Runtime releases should preserve old version paths.
+
+5. Breaking runtime changes require new runtimeVersion and generated HTML regeneration policy.
+
+
+## 14. Testing strategy and quality gates
+
+Required test projects:
+
+1. `Pb.Builder.Domain.Tests`: document model, ids, block rules, rich text normalization, content hash projection, grading rules.
+
+2. `Pb.Builder.Application.Tests`: commands, undo/redo, dirty state, use cases with fake file services, validation.
+
+3. `Pb.Builder.Artifacts.Tests`: HTML generation, metadata blocks, open parsing, teacher key generation, content hash, atomic artifact planning.
+
+4. `Pb.Builder.Serialization.Tests`: JSON snapshots and roundtrip tests for `pb-project`, teacher key, answer state and review state.
+
+5. `Pb.Builder.Security.Tests`: sanitization, URL policy, assessment leak scanner, malicious open cases.
+
+6. `Pb.Builder.E2E.Tests`: builder flows with browser automation where possible.
+
+7. `Pb.Runtime.E2E.Tests`: generated HTML opened through `file://` in Edge/Chrome-compatible automation.
+
+Minimum quality gate for feature work:
+
+1. Unit tests for domain/service logic.
+
+2. Command tests for every document mutation.
+
+3. Serialization roundtrip if persisted shape changes.
+
+4. Snapshot test if generated HTML changes.
+
+5. Security leak test if assessment/public-private boundary is touched.
+
+6. Runtime E2E if generated behavior changes.
+
+7. Browser E2E for key WYSIWYG flows when UI behavior changes.
+
+Required E2E scenarios:
+
+1. Create theory, add section, add paragraph, save, reopen exact authoring state.
+
+2. Create practice, add graded code task, run visible and hidden tests, verify status UI.
+
+3. Create assessment, add choice/text/code graded task, save HTML + key JSON, confirm student HTML has no key data.
+
+4. Open assessment as student HTML, submit answer, write `pb-answer-state` or download updated HTML fallback.
+
+5. Create verified assessment from student HTML + key JSON, confirm score, statuses, comments and manual override.
+
+6. Monaco failure in assessment falls back to textarea.
+
+7. Monaco/Pyodide failure in theory/practice/verified shows inline error with retry.
+
+
+## 15. Performance architecture
+
+Performance rules:
+
+1. Generated HTML displays pre-rendered content before heavy modules finish loading.
+
+2. Monaco loads only if code blocks exist.
+
+3. Monaco instances initialize lazily.
+
+4. Pyodide loads only on first run/debug.
+
+5. Pyodide runs in Worker with fresh namespace per run/test.
+
+6. Python execution has timeout and output cap.
+
+7. Builder interactions should not noticeably lag for normal lesson sizes.
+
+8. Validation should support incremental or scoped checks for interactive editing, while full validation runs before save.
+
+9. Generated HTML target for normal content without external Monaco/Pyodide/runtime files remains around 1-2 MB.
+
+10. Avoid storing duplicate large data in private/public artifacts beyond the deliberate v1 duplication of pre-rendered DOM and readable metadata.
+
+
+## 16. Observability and diagnostics
+
+Local diagnostics:
+
+1. Use `ILogger<T>` or equivalent structured logging through DI.
+
+2. Log save/open failures, runtime bridge failures, validation exceptions and packaging/runtime config errors.
+
+3. Do not log student answers by default.
+
+4. Provide an easy way to locate log folder from builder UI.
+
+5. Generated HTML runtime should show user-facing errors inline and avoid exposing internal stack traces to students.
+
+No telemetry means support relies on local logs and reproducible artifacts. Error messages therefore must be actionable: file path problem, unsupported schema, missing key, contentHash mismatch, blocked URL scheme, missing write permission, runtime asset load failure.
+
+
+## 17. Adding new similar solutions
+
+When adding a new document type, use this checklist:
+
+1. Create `IDocumentTypeModule`.
+
+2. Define artifact policy.
+
+3. Define allowed blocks and section rules.
+
+4. Add document defaults and new document form fields.
+
+5. Add validation rules.
+
+6. Add HTML layout renderer.
+
+7. Add runtime base feature set.
+
+8. Add UI contributors for topbar/sidebar/main surface/inspector where needed.
+
+9. Add serialization snapshots.
+
+10. Add save/open tests and at least one E2E flow.
+
+When adding a new block type:
+
+1. Add domain block model.
+
+2. Add DTO and mapper.
+
+3. Add commands.
+
+4. Add validation.
+
+5. Add Blazor editor.
+
+6. Add inspector if needed.
+
+7. Add HTML renderer.
+
+8. Add runtime module if generated behavior is needed.
+
+9. Register through `BlockTypeRegistry`.
+
+10. Add unit, serialization, snapshot and E2E tests.
+
+When adding a new graded item type:
+
+1. Add public block shape if student sees it.
+
+2. Add private teacher key item shape.
+
+3. Add accepted answer shape.
+
+4. Add review result shape.
+
+5. Add `IGradingHandler`.
+
+6. Add validation rules for key completeness.
+
+7. Add artifact leak tests.
+
+8. Add verified output renderer.
+
+9. Add runtime submit behavior if assessment uses it.
+
+10. Add E2E verified creation scenario.
+
+Architecture smell checklist:
+
+1. A new feature requires editing more than one central `switch` statement.
+
+2. UI writes directly into domain objects.
+
+3. Correct assessment data appears in public document model.
+
+4. JSON DTOs and domain records are treated as the same thing.
+
+5. HTML generation uses raw string concatenation with user content.
+
+6. Runtime JS implements grading rules that should be in C#.
+
+7. Open flow infers project state from DOM instead of `pb-project`.
+
+8. A validation rule exists only in UI and not in application validation.
+
+9. A file write can leave assessment HTML and key JSON out of sync.
+
+10. Tests only cover UI happy path and not generated artifact contents.
+
+
+## 18. Implementation sequence for the first vertical slice
+
+Recommended first milestone order:
+
+1. Create solution/projects and DI composition root.
+
+2. Implement domain ids, document, section, paragraph, Monaco block and minimal assessment graded item.
+
+3. Implement contracts and JSON roundtrip for `pb-project`, teacher key and answer state.
+
+4. Implement `DocumentStore`, command dispatcher, undo/redo and dirty state.
+
+5. Implement start page, new document flow and one WYSIWYG editing surface.
+
+6. Implement save/open for theory with generated HTML and exact reopen.
+
+7. Implement runtime core, theme, navigation and metadata reading.
+
+8. Implement Monaco lazy loading and Pyodide worker for one code flow.
+
+9. Implement assessment split save: student HTML + teacher key JSON.
+
+10. Implement answer submit and `pb-answer-state` update/download fallback.
+
+11. Implement verified creation with one grading flow and score summary.
+
+12. Add snapshot/security/E2E tests for the complete vertical slice.
+
+13. Harden autosave, recovery, logging and packaging.
+
+This order proves the architecture early: domain model, commands, artifacts, runtime, assessment privacy boundary and verified flow all work before expanding the block catalog.
+
+
+## 19. Maintenance rules
+
+1. Every persistent shape change updates contracts, snapshots and schema docs.
+
+2. Every new mutation enters through a command and has undo behavior or an explicit reason why it is not undoable.
+
+3. Every new block/document type is registered through its module descriptor.
+
+4. Every assessment-related feature includes a leak test for student HTML.
+
+5. Every generated runtime behavior has a file-mode test or a documented reason it cannot be automated yet.
+
+6. Every JS interop entry point has a typed C# wrapper and a narrow responsibility.
+
+7. Every open/save error must be actionable to a non-developer author.
+
+8. No automatic schema migration is added silently. Migrations must be explicit, tested and versioned.
+
+9. No feature should make generated HTML require a local server for normal student use.
+
+10. No feature should silently send data over the network.
+
+11. Refactors must preserve exact reopen fidelity for existing current-schema files.
+
+12. If a feature creates repeated conditionals by document type or block type, introduce/extend a registry instead.
+
+
+## 20. Summary architecture contract
+
+PB HTML Builder should be implemented as a modular local Windows application with a pure C# domain core, command-driven authoring state, strict artifact generation, and a separate static generated HTML runtime. The most important boundary is public/private assessment data: public HTML and private teacher key must remain separate by architecture, validation and tests.
+
+Maintainability depends on four mechanisms:
+
+1. Domain model owns invariants.
+
+2. Commands own mutations.
+
+3. Registries own extensibility.
+
+4. Artifact tests own generated output correctness.
+
+If these four mechanisms remain intact, new block types, new generated document types and new grading flows can be added without rewriting the builder or weakening the student/teacher artifact boundary.

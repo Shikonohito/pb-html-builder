@@ -70,7 +70,7 @@ Decision summary
 
 19. Pairing assessment HTML и teacher key JSON выполняется по `documentId + contentHash`.
 
-20. В одной секции допускается ровно одна graded task. Остальные Monaco-блоки в секции являются example/self-run.
+20. В одной секции practice допускается ровно одна graded task. Остальные Monaco-блоки в секции являются example/self-run.
 
 21. Practice поддерживает graded code/debug tasks. Question-блоки в practice не входят в v1.
 
