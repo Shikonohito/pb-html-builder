@@ -1,1 +1,56 @@
+# Build output
+bin/
+obj/
+artifacts/
+publish/
+out/
+*.binlog
 
+# IDE and editor state
+.vs/
+.vscode/
+.idea/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+*.sln.DotSettings.user
+_ReSharper*/
+
+# Test and coverage output
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.trx
+
+# NuGet/package output
+packages/
+*.nupkg
+*.snupkg
+
+# Node/TypeScript output
+node_modules/
+dist/
+.cache/
+.eslintcache
+.nyc_output/
+.parcel-cache/
+.turbo/
+.vite/
+*.tsbuildinfo
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.Local.json
+appsettings.*.local.json
+
+# OS metadata
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini

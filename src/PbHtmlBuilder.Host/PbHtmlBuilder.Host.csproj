@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\PbHtmlBuilder.UI\PbHtmlBuilder.UI.csproj" />
+    <ProjectReference Include="..\PbHtmlBuilder.Application\PbHtmlBuilder.Application.csproj" />
+    <ProjectReference Include="..\PbHtmlBuilder.Infrastructure\PbHtmlBuilder.Infrastructure.csproj" />
+    <ProjectReference Include="..\PbHtmlBuilder.Artifacts\PbHtmlBuilder.Artifacts.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+</Project>
