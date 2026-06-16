@@ -1,0 +1,1726 @@
+# PbHtmlBuilder: архитектура проекта и структура кода
+
+Дата составления: 2026-06-16.
+Целевой файл: project-struct-2026-06-13.txt.
+Основано на документах docs/vision-architecture-2026-06-16.txt,
+docs/vision-requirements-2026-06-16.txt, docs/vision-start-page-2026-06-16.txt,
+docs/vision-html-theory-2026-06-16.txt, docs/vision-html-practice-2026-06-16.txt,
+docs/vision-html-assessment-2026-06-16.txt и
+docs/vision-html-verified-assessment-2026-06-16.txt.
+
+## 1. Текущее состояние репозитория
+
+На момент анализа в рабочем дереве нет готовой .NET solution, проектов src/*.csproj
+или тестовых проектов. Репозиторий содержит:
+
+- docs/ - vision-документы с продуктовой и архитектурной спецификацией;
+- example_theory/ - HTML/CSS/JS прототип student-facing theory.html;
+- example_practice/ - HTML/CSS/JS прототип student-facing practice.html;
+- LICENSE.txt и .gitignore.
+
+Следовательно, этот документ описывает целевую архитектуру, которую нужно создать и
+поддерживать. Прототипы example_theory и example_practice следует рассматривать как
+UX/reference samples для generated HTML и student runtime, но не как финальный
+источник истины для модели данных или artifact generation.
+
+## 2. Назначение продукта
+
+PbHtmlBuilder - локальный single-user builder для Windows. Он запускается как
+localhost browser app и позволяет Author создавать учебные HTML-файлы для Student.
+Основная первая поставка - полный author+student flow для theory.html.
+
+Роли:
+
+- Author создает и редактирует учебные HTML, answer-key JSON и verified reports.
+- Student открывает generated HTML, читает материал, запускает код и отвечает на
+  вопросы или assessment tasks.
+
+Отдельной роли Reviewer нет. Verified review считается author-режимом.
+Authentication и authorization не требуются. Граница доступа - локальные файлы,
+working directory, answer-key JSON и процесс передачи файлов.
+
+## 3. Платформа и app model
+
+Целевая платформа:
+
+- .NET / ASP.NET Core / Blazor target framework: net10.0.
+- Builder UI: Blazor Web App с Interactive Server rendering.
+- Standalone WebAssembly для builder-а не используется.
+- Product shell WebView2 не входит в выбранную архитектуру.
+- Host запускается как localhost browser application.
+- Приложение Windows-oriented, но authoring flow не должен полагаться на native
+  Windows file dialogs.
+
+ASP.NET Core host должен использовать modern hosting model:
+
+- WebApplication.CreateBuilder(args);
+- DI registration через builder.Services;
+- appsettings/options для конфигурации;
+- endpoint mapping;
+- короткий и читаемый Program.cs.
+
+## 4. Главные архитектурные принципы
+
+1. Generated HTML является главным источником истины для повторного открытия
+   проекта в builder-е. DOM не является source of truth: builder импортирует
+   manifest, валидирует schema и реконструирует typed model.
+
+2. Document model строго typed и schemaVersioned. Все редактируемые сущности имеют
+   stable IDs. Display numbers вычисляются из порядка и не используются как identity.
+
+3. Rich text хранится как Typed AST, а не как raw HTML. Renderer отвечает за
+   escaping, encoding и выпуск безопасного static DOM.
+
+4. Artifact generation выполняется typed C# renderers. Razor templates могут
+   использоваться для Blazor UI, но не являются выбранным механизмом генерации
+   theory/practice/assessment/verified HTML.
+
+5. Domain остается чистым. Он не ссылается на Blazor, JS interop, file system,
+   HTTP, ASP.NET Core host types или HTML string rendering.
+
+6. Document state и authoring commands живут в C#. JS используется как thin
+   adapter для browser/runtime APIs: Monaco, Pyodide worker, IndexedDB,
+   BroadcastChannel, selection/range measurement, drag/drop details,
+   beforeunload prompt и File System Access API для assessment runtime.
+
+7. Backend является authority для Save/Open. Все save/open targets разрешаются
+   относительно app working dir. Absolute paths, parent traversal, Windows
+   reserved names, invalid chars и resolved path outside root запрещены.
+
+8. V1 реализует Theory полностью. Practice, Assessment и Verified Assessment
+   должны быть архитектурно зарезервированы и видимы на стартовой странице как
+   disabled/coming soon до реализации.
+
+## 5. Solution layout
+
+Целевая solution должна использовать prefix PbHtmlBuilder.*.
+
+Рекомендуемое дерево:
+
+```text
+pb-html-builder/
+  PbHtmlBuilder.sln
+  Directory.Build.props
+  Directory.Packages.props
+  global.json
+  appsettings.schema.json
+  scripts/
+    Start-LocalServer.ps1
+    Stop-LocalServer.ps1
+  src/
+    PbHtmlBuilder.Host/
+      PbHtmlBuilder.Host.csproj
+      Program.cs
+      appsettings.json
+      appsettings.Development.json
+      Properties/launchSettings.json
+      Endpoints/
+      Configuration/
+    PbHtmlBuilder.UI/
+      PbHtmlBuilder.UI.csproj
+      Routes.razor
+      App.razor
+      _Imports.razor
+      Layouts/
+      Features/
+      Shared/
+      Resources/
+      Styles/
+      Scripts/
+      wwwroot/
+    PbHtmlBuilder.Domain/
+      PbHtmlBuilder.Domain.csproj
+      Documents/
+      Content/
+      RichText/
+      Blocks/
+      Questions/
+      Code/
+      Assessment/
+      Verified/
+      Validation/
+      Commands/
+      Schema/
+      Ids/
+    PbHtmlBuilder.Application/
+      PbHtmlBuilder.Application.csproj
+      Abstractions/
+      Documents/
+      Commands/
+      Autosave/
+      Projects/
+      Rendering/
+      Runtime/
+      Validation/
+      Migration/
+      Grading/
+      StartPage/
+      TabLock/
+    PbHtmlBuilder.Artifacts/
+      PbHtmlBuilder.Artifacts.csproj
+      Html/
+      Json/
+      Manifest/
+      Renderers/
+      RuntimeAssets/
+      Migrations/
+      Snapshots/
+    PbHtmlBuilder.Infrastructure/
+      PbHtmlBuilder.Infrastructure.csproj
+      FileSystem/
+      BrowserStorage/
+      RuntimeAssets/
+      Import/
+      Time/
+      Options/
+  tests/
+    PbHtmlBuilder.Domain.Tests/
+    PbHtmlBuilder.Application.Tests/
+    PbHtmlBuilder.Artifacts.Tests/
+    PbHtmlBuilder.Infrastructure.Tests/
+    PbHtmlBuilder.BrowserE2E.Tests/
+    PbHtmlBuilder.Testing/
+  runtime/
+    student/
+      src/
+      styles/
+      tests/
+      package.json
+      tsconfig.json
+  docs/
+  example_theory/
+  example_practice/
+```
+
+Если TypeScript/CSS build удобнее держать внутри src/PbHtmlBuilder.UI, можно
+перенести runtime/student в UI/Scripts и UI/Styles. Важно сохранить логическое
+разделение builder UI assets и generated student runtime assets.
+
+## 6. Project dependency rules
+
+Разрешенные ссылки:
+
+```text
+PbHtmlBuilder.Host
+  -> PbHtmlBuilder.UI
+  -> PbHtmlBuilder.Application
+  -> PbHtmlBuilder.Infrastructure
+  -> PbHtmlBuilder.Artifacts
+
+PbHtmlBuilder.UI
+  -> PbHtmlBuilder.Application
+  -> PbHtmlBuilder.Domain
+
+PbHtmlBuilder.Application
+  -> PbHtmlBuilder.Domain
+
+PbHtmlBuilder.Artifacts
+  -> PbHtmlBuilder.Domain
+  -> PbHtmlBuilder.Application contracts
+
+PbHtmlBuilder.Infrastructure
+  -> PbHtmlBuilder.Application
+  -> PbHtmlBuilder.Domain
+
+PbHtmlBuilder.Domain
+  -> no project references
+```
+
+Запрещенные связи:
+
+- Domain -> Blazor/UI/JS interop/file system/HTTP/renderers;
+- UI -> concrete file system implementation;
+- Artifacts -> UI components;
+- generated student runtime -> builder backend calls;
+- generated student HTML -> AI/Grammar/authoring-only services;
+- Assessment HTML -> answer-key contents.
+
+## 7. PbHtmlBuilder.Host
+
+Host содержит только composition root, конфигурацию, DI и endpoints.
+
+Основные файлы и папки:
+
+```text
+src/PbHtmlBuilder.Host/
+  Program.cs
+  appsettings.json
+  appsettings.Development.json
+  Configuration/
+    BuilderOptions.cs
+    WorkingDirectoryOptions.cs
+    RuntimeAssetOptions.cs
+    DependencyVersionOptions.cs
+    BrandDefaultsOptions.cs
+  Endpoints/
+    FolderEndpoints.cs
+    ImportEndpoints.cs
+    HealthEndpoints.cs
+  ServiceCollectionExtensions.cs
+```
+
+Program.cs должен оставаться коротким:
+
+- AddRazorComponents().AddInteractiveServerComponents();
+- register Application services;
+- register Artifacts renderers;
+- register Infrastructure adapters;
+- bind options from appsettings;
+- map static assets;
+- map Razor components;
+- map minimal endpoints for folder picker/import where browser-facing API needed.
+
+Конфигурация должна покрывать:
+
+- working dir root behavior;
+- local asset base URL для development;
+- GitHub Pages runtime asset base URL для export;
+- pinned Monaco version/source;
+- pinned Pyodide version/source;
+- preferred port;
+- timeout defaults;
+- brand/copyright defaults.
+
+Dev launch:
+
+- official launch через scripts/Start-LocalServer.ps1;
+- stop через scripts/Stop-LocalServer.ps1;
+- script печатает final localhost URL;
+- script не открывает browser автоматически;
+- port policy: preferred port из config, fallback на следующий доступный.
+
+## 8. PbHtmlBuilder.Domain
+
+Domain - чистое ядро документа. Оно хранит типы, IDs, schema, validation contracts
+и command contracts, но не знает о UI, file system и HTML rendering.
+
+### 8.1. Identity
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Domain/Ids/
+```
+
+Рекомендуемые value objects:
+
+- DocumentId;
+- SectionId;
+- BlockId;
+- QuestionId;
+- AnswerOptionId;
+- CodeBlockId;
+- TestId;
+- MapCellId;
+- SubmissionId, если понадобится отдельная identity для submission records.
+
+IDs должны быть короткими random URL-safe identifiers с type prefix. Примеры:
+
+- doc_x7f3k9;
+- sec_q2p8ab;
+- blk_mn74rc;
+- opt_w2z19k;
+- test_j8hd3q.
+
+Новый элемент всегда получает новый ID. Удаленный ID может вернуться только через
+undo. Display number "01", "02" вычисляется из порядка sections/tasks.
+
+### 8.2. Document root
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Domain/Documents/
+```
+
+Целевые типы:
+
+- DocumentType: Theory, Practice, Assessment, VerifiedAssessment.
+- BuilderDocument или abstract DocumentManifest.
+- TheoryDocument.
+- PracticeDocument.
+- AssessmentDocument.
+- VerifiedAssessmentDocument.
+- DocumentMetadata.
+- TargetFileMetadata.
+- BrandSettings.
+- CopyrightSettings.
+- RuntimeAssetMetadata.
+- PyodidePackageAllowlist.
+- SchemaVersion.
+- BuilderVersion.
+
+Root fields:
+
+- documentId;
+- documentType;
+- schemaVersion;
+- builderVersion;
+- documentTitle;
+- target folder/filename metadata;
+- brand fields;
+- copyright fields;
+- createdAt/updatedAt;
+- runtime asset metadata;
+- pinned Monaco/Pyodide metadata;
+- Pyodide package allowlist;
+- sections/tasks;
+- page-type-specific settings.
+
+Сериализация должна быть стабильной. Для polymorphic blocks/documents нужно заранее
+выбрать явный discriminator, например "kind" или "blockType", чтобы migrations и
+snapshot tests были предсказуемыми.
+
+### 8.3. Rich text AST
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Domain/RichText/
+```
+
+Типы:
+
+- RichTextDocument;
+- RichTextInline;
+- TextRun;
+- InlineCodeRun;
+- LinkRun или LinkMark;
+- RichTextMark: Bold, Italic, Underline, InlineCode;
+- RichTextRange;
+- RichTextSelection;
+- RichTextNormalizer.
+
+Rich text нужен для paragraphs, list items, table cells, answer options, feedback
+и verified comments. Heading text для Monaco title, special h3 и question h3
+поддерживает plain text и inline code.
+
+Domain не хранит contenteditable HTML. Paste из внешних источников в V1 вставляется
+как plain text by default.
+
+### 8.4. Content blocks
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Domain/Blocks/
+```
+
+Базовые типы:
+
+- ContentBlock;
+- BlockContainer;
+- ParagraphBlock;
+- ListBlock;
+- ListItem;
+- ListKind: Ordered, Unordered;
+- TableBlock;
+- TableRow;
+- TableCell;
+- MediaBlock;
+- MediaKind: Image, VideoOrIframe;
+- SpecialBlock;
+- SpecialBlockVariant;
+- MonacoCodeBlock;
+- CodeBlockSettings;
+- QuestionBlock.
+
+Rules:
+
+- Section body содержит blocks.
+- Content nesting - one-level.
+- Section может содержать special block и question block.
+- Body special/question block может содержать paragraph/list/table/media/Monaco.
+- Nested special/question blocks внутри special/question body запрещены.
+- Flat-only model не выбран, recursive arbitrary blocks не выбран.
+
+SpecialBlockVariant для Theory:
+
+- Definition;
+- Important;
+- Hint;
+- CorrectApproach;
+- IncorrectApproach.
+
+Practice/Assessment используют variants:
+
+- Important;
+- Hint;
+- CorrectApproach;
+- IncorrectApproach.
+
+MediaBlock хранит external URL. Builder не скачивает и не встраивает media в HTML.
+Author считается trusted, поэтому arbitrary links и iframe URLs разрешены.
+
+### 8.5. Sections and map
+
+Папки:
+
+```text
+src/PbHtmlBuilder.Domain/Documents/
+src/PbHtmlBuilder.Domain/Content/
+```
+
+Типы:
+
+- Section;
+- TheorySection;
+- PracticeTaskSection;
+- AssessmentSection;
+- SectionMap;
+- SectionMapCell.
+
+Theory section map:
+
+- fixed 2x3 grid из шести cells;
+- левая часть labels: "Разделы темы" и "Что важно рассмотреть";
+- правая часть - editable cell titles и anchors;
+- anchor выбирается из текущих section headings;
+- если section удалена, anchor сбрасывается или помечается invalid;
+- количество map cells не меняется Author-ом в V1.
+
+### 8.6. Questions
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Domain/Questions/
+```
+
+Типы:
+
+- QuestionKind: SingleChoice, MultipleChoice, TextInput;
+- QuestionBlock;
+- ChoiceQuestion;
+- ChoiceOption;
+- ChoiceFeedback;
+- TextInputQuestion;
+- AcceptedTextAnswer;
+- QuestionFeedback.
+
+Theory behavior:
+
+- Single choice default options count: 4.
+- More than one correct option превращает label в multiple answer.
+- Choice options имеют rich text и optional feedback.
+- Text input uses raw exact comparison against configured correct answers.
+- Attempts retryable, no persistence between refresh.
+
+Assessment behavior:
+
+- correctness feedback в assessment.html отсутствует;
+- multiple-choice toggle updates submission immediately;
+- text input accepted through "Ответить";
+- correct answers хранятся только в answer-key JSON.
+
+### 8.7. Code and autotests
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Domain/Code/
+```
+
+Типы:
+
+- MonacoCodeBlock;
+- CodeBlockMode;
+- CodeBlockRuntimeSettings;
+- CodeBlockActionFlags;
+- PyodidePackageReference;
+- Autotest;
+- InputPrintTest;
+- FunctionCallTest;
+- PythonScenarioTest;
+- HiddenTestFlag.
+
+Monaco block fields:
+
+- title;
+- code;
+- runEnabled;
+- readonly;
+- debugEnabled для Practice/Assessment;
+- timeout override, если нужен;
+- package allowlist reference.
+
+Practice/Assessment autotests:
+
+- input/print: stdin и expected output, raw exact;
+- function: functionName, args JSON, expected JSON, compareMode reserved;
+- class/scenario: Monaco Python assert script;
+- Hidden checkbox.
+
+Hidden tests in practice are UI-hidden only and remain openly stored in practice.html.
+Hidden tests in verified student report must not reveal input/expected details.
+
+### 8.8. Assessment and verified models
+
+Папки:
+
+```text
+src/PbHtmlBuilder.Domain/Assessment/
+src/PbHtmlBuilder.Domain/Verified/
+```
+
+Assessment types:
+
+- AssessmentDocument;
+- GradableItem;
+- GradableItemKind;
+- CodeAnswerItem;
+- AnswerKeyDocument;
+- AnswerKeySection;
+- SubmissionDocument;
+- SubmissionAnswerRecord;
+- ChoiceSubmission;
+- TextSubmission;
+- CodeSubmission.
+
+Rules:
+
+- assessment section содержит exactly one gradable item;
+- assessment HTML не содержит correct answers или grading keys;
+- answer-key JSON содержит ключи, tests, expected code и visibility flags;
+- submission JSON содержит latest accepted answers by stable IDs;
+- submission JSON не содержит student identity fields.
+
+Verified types:
+
+- VerifiedAssessmentDocument;
+- VerifiedSourceMetadata;
+- VerifiedSectionResult;
+- GradeStatus: Correct, Incorrect, PendingReview;
+- AutoGradeResult;
+- ManualOverride;
+- ReviewComment;
+- VerifiedSummary.
+
+Rules:
+
+- verified-assessment.html создается из assessment HTML + answer-key JSON +
+  submission JSON;
+- review builder показывает source assessment content readonly;
+- Author может редактировать только comment и manual status override;
+- manual override wins over automatic grading;
+- saved verified HTML self-contained for report purposes;
+- verified manifest хранит source IDs, но не local file paths.
+
+### 8.9. Validation contracts
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Domain/Validation/
+```
+
+Типы:
+
+- ValidationIssue;
+- ValidationSeverity;
+- ValidationResult;
+- ValidationPath;
+- IDocumentValidator<T>;
+- IPathValidator contract, если держать contract в Domain;
+- SchemaCompatibilityResult.
+
+Валидация покрывает:
+
+- schemaVersion compatibility;
+- required metadata;
+- stable IDs uniqueness;
+- section map anchors;
+- one-level nesting;
+- assessment exactly one gradable item;
+- answer-key/submission matching;
+- relative path constraints;
+- manifest integrity before open/save/export.
+
+## 9. PbHtmlBuilder.Application
+
+Application слой содержит use cases, orchestration, document store, command pipeline,
+autosave coordination, save/open flows, migration coordination и service contracts.
+
+### 9.1. Abstractions
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Application/Abstractions/
+```
+
+Интерфейсы:
+
+- IProjectFileStore;
+- IWorkingDirectoryService;
+- IRelativePathPolicy;
+- IFolderBrowser;
+- IFileImportService;
+- IBackupService;
+- IArtifactRenderer<TDocument>;
+- IArtifactReader;
+- IManifestSerializer;
+- IAnswerKeySerializer;
+- ISubmissionSerializer;
+- IAutosaveRepository;
+- IRecentProjectRegistry;
+- IBrowserTabLock;
+- IRuntimeAssetProvider;
+- IPyodideGradingRunner;
+- IClock;
+- IIdGenerator;
+- IAppNotificationSink или toast abstraction.
+
+Infrastructure реализует file/browser/time adapters. Artifacts реализует renderers
+и serializers. Application зависит только от contracts.
+
+### 9.2. Central document store
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Application/Documents/
+src/PbHtmlBuilder.Application/Commands/
+```
+
+Типы:
+
+- IDocumentStore;
+- DocumentStore;
+- DocumentState;
+- DocumentSelectionState;
+- FocusScope;
+- DirtyState;
+- UndoRedoStack;
+- ICommandDispatcher;
+- DocumentCommand;
+- CommandResult;
+- CommandHistoryEntry;
+- TextEditCommandGrouper.
+
+Store responsibilities:
+
+- hold current document state;
+- dispatch document commands;
+- maintain command-level undo/redo;
+- expose dirty state;
+- trigger autosave snapshots;
+- notify UI components about focused scope and selection state;
+- coordinate validation before save/export.
+
+Undo/redo:
+
+- command-level;
+- limit: last 200 commands;
+- structural actions are separate commands: add, delete, move, duplicate, label
+  change, mark change;
+- text edits grouped by short pauses;
+- Ctrl+Z/Ctrl+Shift+Z respect focused scope;
+- Monaco handles own editor-level shortcuts when focused;
+- rich text handles formatting shortcuts when focused;
+- structural undo applies outside text/code focus.
+
+Representative commands:
+
+- CreateSectionCommand;
+- RenameSectionCommand;
+- MoveSectionCommand;
+- DeleteSectionCommand;
+- DuplicateSectionCommand;
+- AddBlockCommand;
+- DeleteBlockCommand;
+- MoveBlockCommand;
+- DuplicateBlockCommand;
+- UpdateRichTextCommand;
+- ToggleRichTextMarkCommand;
+- SetLinkCommand;
+- UpdateTableShapeCommand;
+- UpdateMediaUrlCommand;
+- ChangeSpecialVariantCommand;
+- UpdateCodeCommand;
+- ToggleCodeRunCommand;
+- ToggleCodeReadonlyCommand;
+- ToggleCodeDebugCommand;
+- AddQuestionOptionCommand;
+- MarkQuestionOptionCorrectCommand;
+- UpdateQuestionFeedbackCommand;
+- AddAutotestCommand;
+- UpdateAutotestCommand;
+- UpdateVerifiedCommentCommand;
+- SetManualOverrideCommand.
+
+### 9.3. Project flows
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Application/Projects/
+```
+
+Use cases:
+
+- CreateNewDocumentUseCase;
+- OpenProjectUseCase;
+- SaveProjectUseCase;
+- SaveAsProjectUseCase;
+- ImportProjectUseCase;
+- ValidateOpenProjectUseCase;
+- ConfirmOverwritePolicy;
+- CreateMissingFoldersPolicy.
+
+Create semantics:
+
+- Create задает target path, filename, document title и document type;
+- первый HTML файл появляется при Save;
+- New Theory в V1 открывает Theory builder с unsaved state;
+- Save As создает новый documentId;
+- overwrite требует confirm с artifact type, relative path, filename и last modified;
+- risky save/overwrite/migration создает timestamped backup.
+
+Open semantics:
+
+- Open принимает только HTML с valid builder metadata;
+- file outside working dir копируется/import-ится внутрь root before editing;
+- invalid metadata blocks edit with validation report;
+- best-effort repair не default.
+
+### 9.4. Autosave and recovery
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Application/Autosave/
+```
+
+Типы:
+
+- AutosaveCoordinator;
+- AutosaveSnapshot;
+- AutosaveRegistryEntry;
+- RecoveryListQuery;
+- RecentProjectEntry;
+- RecentProjectService.
+
+Rules:
+
+- autosave каждые 5 минут;
+- 10 rotating slots;
+- full manifest snapshots in IndexedDB;
+- entry stores documentId, document type, title, target path, updatedAt,
+  dirty/unsaved indication;
+- autosave не записывается в working HTML;
+- recovery entry opens document snapshot and keeps dirty state until explicit Save;
+- recent projects registry updates on Save/Open;
+- builder не обязан сканировать working dir.
+
+### 9.5. Start page application flow
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Application/StartPage/
+```
+
+Use cases:
+
+- GetStartPageModelQuery;
+- BeginCreateDocumentCommand;
+- ValidateCreateDocumentRequest;
+- BrowseWorkingFolderQuery;
+- CreateWorkingFolderCommand;
+- OpenRecoverySnapshotCommand.
+
+Start page requirements:
+
+- central block with New Theory, New Practice, New Assessment, New Verified
+  Assessment;
+- New Theory active in V1;
+- future buttons visible but disabled/coming soon;
+- recovery list and recent projects compact;
+- relative folder path + folder picker + filename + document title;
+- verified future form additionally requires assessment HTML, answer-key JSON and
+  submission JSON.
+
+### 9.6. Runtime and grading orchestration
+
+Папки:
+
+```text
+src/PbHtmlBuilder.Application/Runtime/
+src/PbHtmlBuilder.Application/Grading/
+```
+
+Типы:
+
+- RuntimeDependencySettings;
+- RuntimeAssetStampService;
+- PyodideRunRequest;
+- PyodideRunResult;
+- GradingService;
+- AssessmentMatchValidator;
+- VerifiedGenerationService;
+- AutotestRunner.
+
+Application coordinates grading for verified review, but actual browser worker
+adapter belongs outside Domain. Code grading must use same Pyodide Worker model as
+generated runtime: fresh Python state per run, timeout/stop/restart, package
+allowlist and raw exact comparison where required.
+
+### 9.7. Future writing assistance
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Application/WritingAssistance/
+```
+
+Contracts only until feature is implemented:
+
+- IGrammarCheckService;
+- IAutocompleteService;
+- GrammarCheckRequest;
+- GrammarSuggestion;
+- AutocompleteRequest;
+- AutocompleteSuggestion;
+- AcceptSuggestionCommand.
+
+Rules:
+
+- optional authoring services;
+- no Domain dependency on provider;
+- no generated student HTML dependency;
+- transient suggestions not serialized unless accepted;
+- accepted suggestion becomes normal document command and participates in
+  undo/redo, dirty state and autosave;
+- provider credentials must never be stored in generated HTML.
+
+## 10. PbHtmlBuilder.Artifacts
+
+Artifacts отвечает за typed rendering, HTML/JSON serialization, manifest extraction,
+migrations и snapshot helpers.
+
+### 10.1. Renderers
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Artifacts/Renderers/
+```
+
+Типы:
+
+- IGeneratedArtifactRenderer<TDocument>;
+- TheoryHtmlRenderer;
+- PracticeHtmlRenderer;
+- AssessmentHtmlRenderer;
+- VerifiedAssessmentHtmlRenderer;
+- StaticDomRenderer;
+- BlockHtmlRenderer;
+- RichTextHtmlRenderer;
+- CodeBlockHtmlRenderer;
+- QuestionHtmlRenderer;
+- SectionMapHtmlRenderer;
+- RuntimeScriptRenderer;
+- MetadataStampRenderer.
+
+Renderer output:
+
+- static semantic DOM;
+- compact JSON manifest script tag with type="application/json";
+- runtime loader references;
+- CSS links;
+- page-type-specific student runtime config;
+- metadata stamps;
+- generated Russian labels by default.
+
+Renderer must encode text and attributes, never concatenate trusted raw rich text.
+Arbitrary Author URLs are allowed by product policy, but HTML output still needs
+proper attribute encoding.
+
+### 10.2. Manifest and JSON
+
+Папки:
+
+```text
+src/PbHtmlBuilder.Artifacts/Manifest/
+src/PbHtmlBuilder.Artifacts/Json/
+```
+
+Типы:
+
+- ManifestSerializer;
+- ManifestDeserializer;
+- ManifestScriptTagReader;
+- ManifestValidationBridge;
+- CompactJsonOptions;
+- ReadableDiagnosticExportOptions;
+- AnswerKeyJsonSerializer;
+- SubmissionJsonSerializer;
+- VerifiedManifestSerializer.
+
+Generated HTML manifest is compact/minified. A readable diagnostic export may exist,
+but it is not the primary format.
+
+### 10.3. Migrations
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Artifacts/Migrations/
+```
+
+Типы:
+
+- ISchemaMigration;
+- SchemaMigrationRegistry;
+- MigrationPlan;
+- MigrationResult;
+- V1ToV2Migration, etc. as versions appear.
+
+Old schemaVersion values must be handled by explicit migrations. If compatibility
+is impossible, generated runtime must show a clear error rather than silently
+changing behavior.
+
+### 10.4. Runtime assets
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Artifacts/RuntimeAssets/
+```
+
+Типы:
+
+- RuntimeAssetManifest;
+- RuntimeAssetLinkBuilder;
+- RuntimeChannel;
+- DependencyVersionStamp.
+
+Own CSS/JS runtime assets are published to GitHub Pages latest for production
+generated HTML. Development uses local asset base URL from config. Monaco and
+Pyodide use pinned versions and sources from builder config; generated HTML stamps
+these versions in metadata.
+
+## 11. PbHtmlBuilder.Infrastructure
+
+Infrastructure implements adapters for file IO, browser storage contracts, runtime
+asset config and local runtime services.
+
+### 11.1. File system
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Infrastructure/FileSystem/
+```
+
+Типы:
+
+- WorkingDirectoryFileStore;
+- WorkingDirectoryService;
+- RelativePathPolicy;
+- WindowsPathValidator;
+- SafeRelativePath;
+- FolderBrowser;
+- FolderCreationService;
+- FileImportService;
+- BackupFileService;
+- FileMetadataReader.
+
+Path validation must reject:
+
+- absolute paths;
+- parent traversal;
+- reserved Windows names;
+- invalid Windows filename characters;
+- paths that resolve outside working dir.
+
+Manual folder path on start page is a relative folder path inside working dir.
+Filename is entered separately. Files outside root may be selected only for
+import/copy into root before editing.
+
+### 11.2. Browser storage and tab lock
+
+Папка:
+
+```text
+src/PbHtmlBuilder.Infrastructure/BrowserStorage/
+```
+
+Типы:
+
+- IndexedDbAutosaveRepository;
+- IndexedDbRecentProjectRegistry;
+- BroadcastChannelTabLock;
+- LocalStoragePreferencesStore;
+- BeforeUnloadPromptAdapter.
+
+Some adapters will be implemented with JS interop modules in UI/Scripts. The C#
+side should stay behind Application interfaces so Application can be tested without
+browser APIs.
+
+Single-tab behavior:
+
+- one active tab and one active document officially supported;
+- second tab gets soft-lock warning or blocked screen;
+- stale lock has heartbeat timeout and takeover option.
+
+### 11.3. Options and runtime adapters
+
+Папки:
+
+```text
+src/PbHtmlBuilder.Infrastructure/Options/
+src/PbHtmlBuilder.Infrastructure/RuntimeAssets/
+src/PbHtmlBuilder.Infrastructure/Time/
+```
+
+Типы:
+
+- Options validators for WorkingDirectoryOptions, RuntimeAssetOptions,
+  DependencyVersionOptions;
+- SystemClock;
+- ConfigRuntimeAssetProvider;
+- LocalDevelopmentAssetProvider.
+
+## 12. PbHtmlBuilder.UI
+
+UI - Blazor components, pages, layouts, feature folders, resources/constants,
+styling and JS interop wrappers. UI should remain a working tool, not a marketing
+page.
+
+### 12.1. Feature folders
+
+Рекомендуемая структура:
+
+```text
+src/PbHtmlBuilder.UI/Features/
+  StartPage/
+    StartPage.razor
+    NewActionPanel.razor
+    CreateDocumentForm.razor
+    FolderPickerDialog.razor
+    RecoveryList.razor
+    RecentProjectsList.razor
+  Theory/
+    TheoryBuilderPage.razor
+    TheoryTopBar.razor
+    TheorySidebar.razor
+    SectionMapEditor.razor
+    SectionEditor.razor
+    TheoryBlockListEditor.razor
+    QuestionEditor.razor
+    SpecialBlockEditor.razor
+  Practice/
+    PracticeComingSoon.razor
+    PracticeBuilderPage.razor
+  Assessment/
+    AssessmentComingSoon.razor
+    AssessmentBuilderPage.razor
+  VerifiedAssessment/
+    VerifiedComingSoon.razor
+    VerifiedReviewPage.razor
+  SharedEditor/
+    ProjectContextMenu.razor
+    BlockChrome.razor
+    InsertionRail.razor
+    InsertionMenu.razor
+    DragHandle.razor
+    RichTextEditor.razor
+    RichTextToolbar.razor
+    ContextMenu.razor
+    MonacoBlockEditor.razor
+    CodeBlockPreview.razor
+    TableEditor.razor
+    MediaUrlPrompt.razor
+    AutosaveToast.razor
+    ValidationReport.razor
+    SoftLockScreen.razor
+  SharedRuntime/
+    RuntimeDependencyStatus.razor
+    PyodideStatusPanel.razor
+  SharedArtifacts/
+    ArtifactPreview.razor
+```
+
+Shared components should exist only where behavior is genuinely common:
+
+- section shell;
+- block chrome;
+- context menu;
+- insertion rail;
+- rich text toolbar;
+- Monaco wrapper;
+- autosave toast;
+- file validation report.
+
+### 12.2. UI behavior
+
+Builder UI:
+
+- default language should be English;
+- all strings must be in resources/constants for future localization;
+- generated HTML default labels remain Russian;
+- documentTitle updates browser tab title and top h1;
+- filename, documentTitle, browser title and section/task titles are separate
+  fields;
+- project commands Open, Save, Save As are available through custom context menu;
+- visible top menu or permanent Save button is not required;
+- Save/Autosave feedback appears as toast, not permanent status bar.
+
+Editor interactions:
+
+- empty document/section/special body shows circular plus button;
+- hover before/after sections and blocks shows insertion rail;
+- right-click opens custom context menu;
+- trash icon deletes target without confirmation; undo is recovery path;
+- drag starts from dedicated handles only;
+- sections reorder from main handle and sidebar item handle;
+- blocks reorder within parent container;
+- duplicate supported for sections and blocks with new stable IDs;
+- internal copy/paste should create new IDs on paste.
+
+Rich text editor:
+
+- custom limited editor;
+- toolbar appears above selection;
+- commands: bold, italic, underline, inline code, link;
+- right-click selection menu offers same actions;
+- active mark shows pressed/check state;
+- hotkeys: Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Q, Ctrl+K;
+- if cursor is on a word without selection, formatting hotkey should apply to word.
+
+### 12.3. Styles
+
+Папки:
+
+```text
+src/PbHtmlBuilder.UI/Styles/
+  tokens.css
+  builder-shell.css
+  editor.css
+  components.css
+  student-artifacts/
+```
+
+Requirements:
+
+- custom CSS/components, not heavy Blazor UI component library;
+- design tokens;
+- separate bundles for builder shell/editor CSS, student artifact CSS and shared
+  code/runtime CSS only when needed;
+- Lucide is the base icon set, with custom SVGs only for brand-specific needs;
+- status should use text+icon+color, not color alone.
+
+### 12.4. JS/TypeScript interop
+
+Папка:
+
+```text
+src/PbHtmlBuilder.UI/Scripts/
+  monacoAdapter.ts
+  pyodideWorkerClient.ts
+  richTextSelectionAdapter.ts
+  dragDropAdapter.ts
+  indexedDbAutosave.ts
+  broadcastTabLock.ts
+  beforeUnloadPrompt.ts
+  fileSystemAccessAdapter.ts
+```
+
+Own JS should be TypeScript bundles. JS is limited to browser/runtime APIs:
+
+- Monaco mount/unmount/model sync;
+- Pyodide Worker lifecycle;
+- File System Access API for assessment student runtime where needed;
+- drag/drop pointer details;
+- selection/range measurement for rich text toolbar;
+- BroadcastChannel/localStorage tab lock;
+- IndexedDB registry/autosave storage;
+- beforeunload dirty prompt.
+
+Document state, commands, validation, save/open policy and artifact generation stay
+in C#.
+
+## 13. Generated student runtime
+
+Generated HTML must not call builder backend or telemetry endpoints. It may load:
+
+- own CSS/JS assets from GitHub Pages latest;
+- Monaco and Pyodide from pinned configured sources;
+- external media URLs;
+- iframe URLs entered by Author.
+
+Runtime architecture:
+
+- lazy-load Monaco on code block focus/visibility;
+- lazy-load Pyodide on first Run/Debug;
+- Pyodide runs in Web Worker;
+- timeout, stop and restart capability required;
+- fresh Python namespace per run/debug;
+- no implicit shared namespace between blocks;
+- package allowlist per document;
+- input() implemented through inline prompt queue in output area;
+- graceful error/retry if Monaco/Pyodide/runtime fails;
+- main content remains readable when runtime dependencies fail.
+
+Suggested TypeScript modules:
+
+```text
+runtime/student/src/
+  bootstrap.ts
+  manifest.ts
+  theme.ts
+  sidebar.ts
+  monacoLoader.ts
+  pyodideWorkerClient.ts
+  pyodide.worker.ts
+  codeBlocks.ts
+  quizRuntime.ts
+  practiceRuntime.ts
+  assessmentSubmission.ts
+  verifiedReport.ts
+  fileSystemAccess.ts
+  statusIndicators.ts
+```
+
+## 14. Artifact-specific architecture
+
+### 14.1. Theory V1
+
+Theory is the only required complete V1 builder.
+
+V1 acceptance must cover:
+
+- create theory document;
+- edit all supported block types;
+- save HTML;
+- open HTML back in builder;
+- undo/redo;
+- recover from autosave;
+- open exported theory.html as file://;
+- read material;
+- run runnable code blocks;
+- answer theory questions;
+- golden sample lesson using all block types.
+
+Student layout:
+
+- top bar;
+- sidebar;
+- main content;
+- section map;
+- lesson sections.
+
+Top bar:
+
+- sidebar show/hide;
+- topic heading area;
+- topic-kicker default "Python Bootcamp";
+- h1 documentTitle;
+- light/dark theme button.
+
+Sidebar:
+
+- title "Оглавление";
+- hide button;
+- section list with display numbers and titles;
+- footer copyright default "© Ivan Ivanov, 2026";
+- active item updates through scroll observer;
+- collapsed state does not persist.
+
+Theory content:
+
+- section map fixed 2x3;
+- sections with computed display number "01";
+- blocks: paragraph, ordered list, unordered list, table, image URL, video/iframe
+  URL, special block, Monaco code block, question block;
+- special body and question body can contain simple content and Monaco, but not
+  nested special/question;
+- simple tables only: optional header, add/remove rows/columns, rich text cells,
+  no merged cells, no sort, no formulas.
+
+Theory questions:
+
+- single answer;
+- multiple answer;
+- text input answer;
+- feedback rich text;
+- retryable attempts;
+- no persistence between refresh.
+
+### 14.2. Practice future
+
+Practice is future generated artifact. It should guide architecture but not block
+V1 Theory.
+
+Key requirements:
+
+- single active task navigation;
+- topbar task buttons with status dot;
+- sidebar status per task: pending/correct/incorrect;
+- task body uses same content model except question blocks should not be used;
+- Monaco supports reset/run/copy/debug;
+- if debug active, run becomes active;
+- at most one debug-enabled Monaco block per section;
+- autotest editor appears when debug active;
+- test types: input/print, function, class/scenario;
+- hidden checkbox exists, but hidden tests are stored openly in practice.html;
+- no persistence between sessions; refresh resets code/output/status.
+
+Architecture impact:
+
+- Domain needs reusable Autotest model now, even if Practice UI is disabled.
+- SharedEditor should keep Monaco/debug flags extensible.
+- Runtime should expose practice status updates as session-local state only.
+
+### 14.3. Assessment future
+
+Assessment is future generated artifact for collecting student answers without
+exposing answer keys.
+
+File model:
+
+- assessment HTML: student-facing tasks and manifest without keys;
+- answer-key JSON: Author sidecar with correct answers, tests and expected code;
+- submission JSON: Student answers.
+
+Rules:
+
+- assessment.html must not contain correct answers or grading keys;
+- answer-key JSON is plain JSON protected by process control;
+- submission JSON has no student identity fields;
+- default sidecar suffixes: .assessment.answer-key.json and
+  .assessment.submission.json;
+- exactly one gradable item per assessment section;
+- student file handle is requested on first accepted answer;
+- if File System Access API is unavailable, assessment shows blocked state;
+- no manual export/import fallback in selected UX.
+
+Architecture impact:
+
+- SaveAssessmentUseCase must write both assessment HTML and answer-key JSON.
+- Assessment renderer and answer-key serializer must be separate outputs.
+- Submission schema must be validated as untrusted input.
+- Verified matching must use documentId, schemaVersion compatibility and stable IDs.
+
+### 14.4. Verified Assessment future
+
+Verified Assessment is a derived artifact generated from assessment HTML,
+answer-key JSON and submission JSON.
+
+Creation flow:
+
+- start page asks for output folder, output filename, title, assessment HTML,
+  answer-key JSON and submission JSON;
+- builder validates existence/import, metadata, documentId matches, schema
+  compatibility and section/item ID matching;
+- validation failure blocks generation with report;
+- after validation, builder runs grading and opens review builder before Save;
+- direct generation without review is not selected.
+
+Review builder:
+
+- assessment content readonly;
+- original task text, choices, code answer and student answer not editable;
+- Author can add/edit rich text comment per section;
+- Author can mark section Correct, Incorrect or PendingReview;
+- manual override wins over automatic grading;
+- reviewer identity/audit info not stored.
+
+Verified HTML:
+
+- follows assessment layout;
+- top summary correct/total;
+- sidebar status Correct/Incorrect/PendingReview;
+- section border and status use text+icon+color;
+- hidden tests do not reveal input/expected details;
+- expected code shown only when answer-key visibility flag allows it;
+- report opens without answer-key JSON.
+
+## 15. File naming and metadata conventions
+
+Default generated filenames:
+
+- lesson.theory.html;
+- lesson.practice.html;
+- lesson.assessment.html;
+- lesson.assessment.answer-key.json;
+- lesson.assessment.submission.json;
+- lesson.verified-assessment.html.
+
+Save As must create a new documentId. This prevents old answer keys/submissions
+from being mixed with a new copy.
+
+Every generated HTML must contain:
+
+- static semantic DOM;
+- compact JSON manifest script tag;
+- schemaVersion;
+- builderVersion;
+- runtimeChannel or runtime base URL;
+- createdAt/updatedAt;
+- documentId;
+- stable IDs for sections, blocks, questions, options, tests and map cells.
+
+## 16. Main data flows
+
+### 16.1. New Theory flow
+
+1. StartPage loads recovery/recent registries from IndexedDB.
+2. Author clicks New Theory.
+3. Create form collects relative folder path, filename and document title.
+4. Application validates target metadata.
+5. Document factory creates TheoryDocument with new documentId.
+6. DocumentStore opens unsaved document.
+7. TheoryBuilderPage renders from DocumentStore state.
+8. First file write happens only on Save.
+
+### 16.2. Edit flow
+
+1. UI component captures an intent: text edit, add block, reorder, toggle flag.
+2. UI dispatches a typed command to DocumentStore.
+3. Store validates focus/scope and applies command.
+4. Store updates document state, dirty state, command history and selection state.
+5. Store notifies UI.
+6. AutosaveCoordinator schedules snapshot as needed.
+
+### 16.3. Save flow
+
+1. SaveProjectUseCase asks DocumentStore for current document.
+2. Validation runs against document and target path.
+3. If target file exists, overwrite confirmation is required.
+4. If risky save/overwrite/migration, BackupFileService creates timestamped backup.
+5. Artifact renderer produces static HTML + manifest.
+6. IProjectFileStore writes inside working dir only.
+7. RecentProjectRegistry updates.
+8. Dirty state clears and toast feedback appears.
+
+### 16.4. Open flow
+
+1. Author chooses Open from project context menu.
+2. If file is outside working dir, ImportProjectUseCase copies it into root.
+3. ArtifactReader extracts manifest from HTML.
+4. Manifest validation and migrations run.
+5. Invalid metadata blocks edit with report.
+6. Valid document loads into DocumentStore.
+7. RecentProjectRegistry updates.
+
+### 16.5. Autosave recovery flow
+
+1. AutosaveCoordinator writes full compact manifest snapshots to IndexedDB every
+   5 minutes.
+2. IndexedDB keeps 10 rotating slots.
+3. Start page lists recent autosave entries.
+4. Author opens a recovery entry.
+5. Snapshot loads into builder with dirty state preserved.
+6. Explicit Save writes generated HTML.
+
+### 16.6. Generated runtime flow
+
+1. Student opens generated HTML, including file:// in Edge/Chrome.
+2. Static DOM is readable immediately.
+3. Runtime bootstrap reads compact manifest/config.
+4. Monaco loads only when code block is visible/focused.
+5. Pyodide worker starts on first Run/Debug.
+6. Code runs in fresh namespace with timeout and input prompt queue.
+7. Runtime failure affects only interactive block, not the whole document.
+
+## 17. Configuration
+
+appsettings.json should include sections similar to:
+
+```text
+PbHtmlBuilder:
+  WorkingDirectory:
+    RootMode
+    RootPath
+  RuntimeAssets:
+    DevelopmentBaseUrl
+    ExportBaseUrl
+    RuntimeChannel
+  Dependencies:
+    MonacoVersion
+    MonacoBaseUrl
+    PyodideVersion
+    PyodideBaseUrl
+  Server:
+    PreferredPort
+  Defaults:
+    TopicKicker
+    Copyright
+    BrandName
+  Runtime:
+    PythonTimeout
+```
+
+Technical settings live in appsettings/config files. Per-browser UI preferences,
+autosave registry and recent project registry live in localStorage/IndexedDB.
+
+## 18. Testing strategy
+
+Test project organization:
+
+```text
+tests/PbHtmlBuilder.Domain.Tests/
+tests/PbHtmlBuilder.Application.Tests/
+tests/PbHtmlBuilder.Artifacts.Tests/
+tests/PbHtmlBuilder.Infrastructure.Tests/
+tests/PbHtmlBuilder.BrowserE2E.Tests/
+tests/PbHtmlBuilder.Testing/
+```
+
+Domain tests:
+
+- schema and default values;
+- ID generation and uniqueness rules;
+- rich text AST normalization;
+- block nesting validation;
+- assessment exactly-one-gradable validation;
+- command apply/unapply invariants if command logic is in Domain;
+- answer-key/submission matching contracts.
+
+Application tests:
+
+- DocumentStore command dispatch;
+- undo/redo limit and grouping;
+- dirty state;
+- autosave scheduling;
+- save/open orchestration;
+- Save As new documentId;
+- overwrite/backup policies;
+- recovery and recent project registry behavior with fakes.
+
+Artifacts tests:
+
+- golden snapshots for theory HTML;
+- manifest JSON snapshots;
+- answer-key JSON snapshots;
+- submission JSON snapshots;
+- verified report snapshots;
+- escaping and safe attribute rendering;
+- migration snapshots;
+- generated HTML contains required metadata stamps and runtime config.
+
+Infrastructure tests:
+
+- strict relative path validation;
+- reserved Windows names;
+- invalid chars;
+- parent traversal;
+- resolved path outside root;
+- backup filename generation;
+- folder creation policy.
+
+Browser E2E:
+
+- V1 Theory create/add/reorder/delete/duplicate;
+- rich text toolbar and hotkeys;
+- Monaco Run with input queue;
+- Save/Open roundtrip;
+- autosave recovery;
+- exported file:// preview;
+- Pyodide worker timeout/error handling;
+- soft-lock second tab screen.
+
+Future tests:
+
+- practice single active task navigation and debug pass/fail;
+- assessment no keys in generated HTML;
+- submission JSON creation/update through File System Access API;
+- verified mismatched documentId validation failure;
+- missing submission becomes pending review;
+- exact set multiple-answer grading;
+- manual override wins;
+- hidden tests not revealed in verified report;
+- writing assistance suggestions are transient until accepted.
+
+CI release gate:
+
+- dotnet build;
+- dotnet test;
+- TypeScript build;
+- CSS build;
+- golden snapshot tests;
+- key Playwright/browser tests;
+- GitHub Pages runtime asset publish when release criteria pass.
+
+## 19. Implementation order
+
+Recommended implementation sequence:
+
+1. Scaffold solution, projects, references, global.json and build scripts.
+2. Add Host with minimal Blazor Web App Interactive Server and config/options.
+3. Implement Domain IDs, document root, rich text AST and Theory block model.
+4. Implement Application DocumentStore, command pipeline and validation shell.
+5. Implement StartPage with New Theory active and future actions disabled.
+6. Implement safe working directory services and folder picker.
+7. Implement Theory builder UI for sections, blocks, rich text and Monaco settings.
+8. Implement typed TheoryHtmlRenderer and manifest serializer.
+9. Implement Save/Open roundtrip for theory.html.
+10. Implement IndexedDB autosave/recovery and recent projects.
+11. Implement generated theory student runtime: sidebar, theme, quiz, Monaco,
+    Pyodide worker and input prompt queue.
+12. Add golden sample lesson and snapshot/browser acceptance tests.
+13. Add placeholders/contracts for Practice, Assessment, Verified and Writing
+    Assistance without enabling unfinished flows.
+
+## 20. Architecture risks and guardrails
+
+Risk: separate builders reduce coupling but can duplicate editor mechanics.
+Guardrail: keep section/block mechanics in SharedEditor and Domain reusable models.
+
+Risk: Interactive Server keeps state central but localhost connection loss can
+interrupt authoring.
+Guardrail: autosave, dirty state and recovery are mandatory.
+
+Risk: backend-only working-dir writes are safer but require clear relative path UX.
+Guardrail: in-app folder picker, strict validation, import/copy flow for outside files.
+
+Risk: GitHub Pages latest for own runtime can change old generated HTML behavior.
+Guardrail: schemaVersion adapters, metadata stamps and backward-compatible runtime.
+
+Risk: Monaco and Pyodide are heavy.
+Guardrail: lazy mount/load in builder and generated HTML.
+
+Risk: assessment submission JSON is not trusted.
+Guardrail: verified grading validates IDs/schema and treats JSON as user-controlled input.
+
+Risk: future Grammar Check and AI autocomplete can add privacy, latency and cost.
+Guardrail: optional authoring services only, disabled by config, no generated HTML
+dependency and no credentials in artifacts.
+
+## 21. Non-goals for V1
+
+Not included in V1 Theory:
+
+- Practice builder implementation;
+- Assessment builder implementation;
+- Verified review builder implementation;
+- AI autocomplete implementation;
+- Grammar Check implementation;
+- authentication/authorization;
+- WebView2 shell;
+- offline generated HTML guarantee;
+- full keyboard-only authoring/WCAG acceptance;
+- native Windows file dialogs as primary authoring flow;
+- server telemetry from generated HTML.
+
+## 22. Maintenance rules
+
+When changing architecture:
+
+- update this document and the relevant vision document together;
+- preserve dependency direction;
+- add schema migrations for manifest changes;
+- add or update golden snapshots for renderer changes;
+- update browser E2E when user-facing authoring flow changes;
+- keep generated HTML backward compatibility explicit;
+- do not put transient authoring UI state into manifest unless accepted by Author;
+- do not move file IO policy into UI components;
+- do not let JS become the owner of document state.
+
+The core invariant is simple: C# typed model and command pipeline own authoring
+state; typed C# renderers produce artifacts; thin TypeScript adapters handle browser
+runtime edges; generated HTML remains readable and self-describing through its
+static DOM plus compact manifest.

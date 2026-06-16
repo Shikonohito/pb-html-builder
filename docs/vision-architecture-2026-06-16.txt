@@ -1,0 +1,237 @@
+# PbHtmlBuilder architecture vision, 2026-06-16
+
+## 1. Platform
+
+[Common] PbHtmlBuilder MUST быть .NET Blazor application с target framework net10.0.
+
+[Common] Builder UI MUST использовать Blazor Web App с Interactive Server rendering. Standalone WebAssembly не является выбранной моделью builder-а.
+
+[Common] Host запускается как localhost browser app. Product shell WebView2 не входит в выбранную архитектуру.
+
+[Common] ASP.NET Core host SHOULD использовать modern hosting model: WebApplicationBuilder, DI registration, endpoint mapping и readable Program.cs.
+
+[Common] Приложение должно быть Windows-oriented, но не должно полагаться на native Windows file dialogs в authoring flow.
+
+## 2. Solution naming and projects
+
+[Common] Namespaces и projects SHOULD использовать префикс PbHtmlBuilder.*.
+
+[Common] Solution SHOULD быть layered:
+- PbHtmlBuilder.Host: ASP.NET Core host, Program.cs, configuration, endpoint composition.
+- PbHtmlBuilder.UI: Blazor components, pages, layouts, feature folders, resources/constants.
+- PbHtmlBuilder.Domain: pure document core, schemas, IDs, commands, validation contracts.
+- PbHtmlBuilder.Application: use cases, document store orchestration, save/open flows, autosave coordination.
+- PbHtmlBuilder.Artifacts: typed C# renderers, HTML/JSON serialization, migrations, snapshot helpers.
+- PbHtmlBuilder.Infrastructure: file IO inside working dir, IndexedDB interop contracts, asset config, local runtime adapters.
+- Test projects grouped by layer and browser E2E scope.
+
+[Common] Domain MUST NOT reference Blazor, JS interop, file system, HTTP, HTML string rendering or ASP.NET Core host types.
+
+[Common] Application MAY reference Domain and define service interfaces for storage, artifact generation, validation and runtime coordination.
+
+[Common] Artifacts MAY reference Domain and Application contracts to render static DOM, manifest JSON, answer-key JSON, submission JSON and verified HTML.
+
+## 3. Feature folders
+
+[Common] UI and Application SHOULD group code by builder type:
+- StartPage.
+- Theory.
+- Practice.
+- Assessment.
+- VerifiedAssessment.
+- SharedEditor.
+- SharedRuntime.
+- SharedArtifacts.
+
+[Common] Future Practice/Assessment/Verified routes SHOULD be reserved but disabled until implemented.
+
+[V1 Theory] Theory feature MUST be complete in V1 and must not depend on unfinished Practice/Assessment code paths.
+
+[Common] Shared components SHOULD exist only where behavior is genuinely common: section shell, block chrome, context menu, insertion rail, rich text toolbar, Monaco wrapper, autosave toast, file validation.
+
+## 4. Host, configuration and launch
+
+[Common] Official dev launch SHOULD use PowerShell scripts Start-LocalServer.ps1 and Stop-LocalServer.ps1.
+
+[Common] Launch script SHOULD print the localhost URL. It SHOULD NOT automatically open the browser.
+
+[Common] Port policy: preferred port from config, fallback to next available port, and printed final URL.
+
+[Common] App settings MUST define:
+- working dir root behavior;
+- local asset base URL for development;
+- GitHub Pages runtime asset base URL for export;
+- pinned Monaco version/source;
+- pinned Pyodide version/source;
+- preferred port;
+- optional brand/copyright defaults.
+
+[Common] Technical settings SHOULD live in appsettings/config files. Per-browser UI preferences and recent/autosave registries live in localStorage/IndexedDB.
+
+## 5. Document model
+
+[Common] Document model MUST be typed and schemaVersioned.
+
+[Common] Root document fields SHOULD include:
+- documentId;
+- documentType;
+- schemaVersion;
+- builderVersion;
+- documentTitle;
+- filename target metadata;
+- brand fields;
+- copyright fields;
+- createdAt/updatedAt;
+- runtime asset metadata;
+- pyodide package allowlist;
+- sections/tasks;
+- page-type-specific settings.
+
+[Common] Stable IDs MUST exist for sections, blocks, question items, answer options, Monaco blocks, tests and map cells where needed.
+
+[Common] Rich text MUST be stored as Typed AST, not raw HTML fragments. The AST SHOULD represent text runs, marks, inline code and links.
+
+[Common] Block content MUST be structured. Renderer is responsible for safe encoding, escaping and producing final HTML.
+
+## 6. State management
+
+[Common] Builder MUST use a central document store.
+
+[Common] Store responsibilities:
+- hold current document state;
+- dispatch document commands;
+- maintain command-level undo/redo;
+- expose dirty state;
+- trigger autosave snapshots;
+- notify UI components of focused scope and selection state;
+- coordinate validation before save/export.
+
+[Common] Undo/redo MUST be command-level. Text edits SHOULD be grouped by short pauses. Structural actions such as add, delete, move, duplicate, mark change and label change are separate commands.
+
+[Common] Undo history limit is last 200 commands.
+
+[Common] Ctrl+Z and Ctrl+Shift+Z MUST respect focused scope. Monaco handles its own editor-level shortcuts when focused; rich text handles its own formatting shortcuts when focused; structural undo applies outside text/code focus.
+
+## 7. Rendering and artifacts
+
+[Common] Generated HTML MUST be produced by typed C# renderers.
+
+[Common] Renderer output MUST include:
+- static semantic DOM;
+- compact JSON manifest script tag;
+- runtime loader references;
+- CSS links;
+- page-type-specific student runtime config;
+- metadata stamps.
+
+[Common] Renderer SHOULD have golden snapshot tests.
+
+[Common] Razor templates are not the selected artifact renderer. They MAY be used for UI components, but artifact generation SHOULD stay in typed C# services for validation, escaping and predictable snapshots.
+
+[Common] DOM is not the source of truth. Builder imports manifest, validates schema and reconstructs typed model.
+
+## 8. File IO boundaries
+
+[Common] Backend storage services MUST resolve all save/open targets against app working dir.
+
+[Common] File path validation MUST reject:
+- absolute paths;
+- parent traversal;
+- reserved Windows names;
+- invalid Windows filename characters;
+- paths that resolve outside working dir.
+
+[Common] Importing files from outside root MUST copy/import them into working dir before editing.
+
+[Common] Save SHOULD be protected by validation before write. Risky save, overwrite and migration SHOULD create timestamped backup.
+
+[Common] Autosave is not written into the working HTML. Autosave lives in IndexedDB full manifest snapshots.
+
+## 9. JS interop boundary
+
+[Common] JS MUST be used as thin adapters for browser/runtime APIs:
+- Monaco mount/unmount and model sync;
+- Pyodide Worker lifecycle;
+- File System Access API where needed by student assessment;
+- drag/drop pointer details;
+- selection/range measurement for rich text toolbar;
+- BroadcastChannel/localStorage tab lock;
+- IndexedDB registry/autosave storage;
+- beforeunload dirty prompt.
+
+[Common] Document state, commands, validation, save/open policy and artifact generation MUST stay in C#.
+
+[Common] Own JS SHOULD be written as TypeScript bundles.
+
+[Common] Builder SHOULD mount Monaco only for visible or active code blocks. Non-visible code blocks SHOULD show lightweight previews.
+
+## 10. CSS and visual assets
+
+[Common] UI styling SHOULD use custom CSS/components, not a heavy Blazor UI component library.
+
+[Common] CSS SHOULD be organized through design tokens and separate bundles:
+- builder shell/editor CSS;
+- student artifact CSS;
+- shared code/runtime CSS only when needed.
+
+[Common] Icons SHOULD use Lucide as the base icon set plus custom SVGs for brand-specific needs.
+
+[Common] Generated HTML CSS/JS assets published to GitHub Pages SHOULD be built and published by CI.
+
+## 11. Runtime architecture
+
+[Common] Generated HTML runtime SHOULD lazy-load Monaco on code block focus/visibility and lazy-load Pyodide on first Run/Debug.
+
+[Common] Pyodide MUST run in Web Worker with timeout, stop and restart capability.
+
+[Common] Python run state MUST be fresh per run. Blocks do not share Python namespace by default.
+
+[Common] Package allowlist is per document. Loader MUST install/load allowlisted Pyodide packages before running code.
+
+[Common] input() MUST be implemented through inline prompt queue in output area.
+
+## 12. Future writing assistance architecture
+
+[Future Writing Assistance] Grammar Check and AI autocomplete MUST be modeled as optional authoring services, not as dependencies of generated student HTML.
+
+[Future Writing Assistance] Service contracts SHOULD live outside Domain. Domain continues to store only accepted document text and validation-neutral metadata.
+
+[Future Writing Assistance] Application SHOULD expose service interfaces for:
+- grammar check requests over plain text or rich text ranges;
+- grammar suggestions mapped back to stable text ranges;
+- AI autocomplete requests with document context;
+- accepted suggestion commands that update the central document store.
+
+[Future Writing Assistance] UI SHOULD render grammar highlights and autocomplete suggestions as transient authoring state. Transient suggestions MUST NOT be serialized into the document manifest unless accepted by Author.
+
+[Future Writing Assistance] Accepted Grammar Check fixes and AI autocomplete completions MUST enter the command pipeline as normal text edit commands and participate in undo/redo, dirty state and autosave.
+
+[Future Writing Assistance] Provider choice is intentionally open: local engine, external API or later plugin. Configuration MUST allow the feature to be disabled.
+
+[Future Writing Assistance] No secrets or provider credentials may be stored in generated HTML.
+
+## 13. Testing and CI
+
+[Common] Unit tests MUST cover Domain schema, ID generation rules, validation, commands, undo/redo, migrations and file path validation.
+
+[Common] Artifact tests MUST cover generated HTML, manifest, answer-key JSON, submission JSON and verified report snapshots.
+
+[Common] Browser E2E MUST cover V1 Theory core authoring and exported file:// preview.
+
+[Common] Pyodide integration tests MUST run real browser worker examples with timeout.
+
+[Future Writing Assistance] Future tests SHOULD cover grammar highlight mapping, accepted correction commands, autocomplete accepted text insertion and no serialization of transient suggestions.
+
+[Common] CI release gate MUST include dotnet build/test, TypeScript build, CSS build, snapshot tests and key Playwright tests.
+
+## 14. Architecture risks
+
+[Common] Separate builders reduce page-type coupling but increase duplication. SharedEditor and Domain capabilities must prevent repeated implementations of section/block mechanics.
+
+[Common] Interactive Server keeps C# state central, but localhost connection loss can interrupt authoring. Autosave and dirty state are mandatory mitigations.
+
+[Common] Backend-only working-dir writes are safer than arbitrary disk writes, but require clear UI for relative paths and import/copy flows.
+
+[Common] Latest own runtime assets require stronger backward compatibility discipline than pinned asset URLs.
+
+[Future Writing Assistance] Grammar Check and AI autocomplete may introduce privacy, latency, cost and availability risks. They must remain optional and disabled without breaking core authoring.

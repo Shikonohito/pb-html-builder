@@ -1,0 +1,192 @@
+# PbHtmlBuilder verified-assessment.html vision, 2026-06-16
+
+## 1. Status and identity
+
+[Future Verified] verified-assessment.html is a derived fourth artifact type.
+
+[Future Verified] It is generated from:
+- assessment HTML;
+- answer-key JSON;
+- submission JSON.
+
+[Future Verified] It is a readonly student feedback report, not a fresh authoring document.
+
+[Future Verified] Builder MUST be able to reopen saved verified-assessment.html in review mode to edit comments and manual overrides.
+
+[Future Verified] verified metadata MUST store source IDs, including sourceDocumentId, but SHOULD NOT store local file paths to source files.
+
+## 2. Creation flow
+
+[Future Verified] New Verified Assessment on start page MUST request:
+- output relative folder path;
+- output filename;
+- output title;
+- existing assessment HTML;
+- existing answer-key JSON;
+- existing submission JSON.
+
+[Future Verified] Builder MUST validate:
+- all files exist or are imported into working dir as needed;
+- assessment HTML contains valid metadata;
+- key documentId matches assessment documentId;
+- submission documentId matches assessment documentId;
+- schemaVersion values are compatible;
+- section/item IDs in key and submission can be matched.
+
+[Future Verified] If validation fails, builder MUST show report and block verified generation.
+
+[Future Verified] After validation, builder MUST run grading and open review builder before Save.
+
+[Future Verified] Direct generation without review is not the selected flow.
+
+## 3. Review builder
+
+[Future Verified] Review builder MUST show assessment content as readonly.
+
+[Future Verified] Author MUST NOT be able to edit original task text, choices, code answer or student answer in verified review.
+
+[Future Verified] Author MAY:
+- add/edit rich text comment per section;
+- mark section as "Верно";
+- mark section as "Неверно";
+- mark section as "Ожидает проверки".
+
+[Future Verified] Manual override MUST win over automatic grading.
+
+[Future Verified] Comment is optional for any manual override.
+
+[Future Verified] Comment format MUST be rich text block using the same inline AST as normal content, but no Monaco/media is required for comments.
+
+[Future Writing Assistance] Verified review comments SHOULD be compatible with future Grammar Check and AI autocomplete.
+
+[Future Writing Assistance] Grammar Check and AI autocomplete in verified review MUST apply only to Author comments, not to readonly task text, student answers or grading results.
+
+[Future Verified] Review builder does not store reviewer identity or audit info.
+
+## 4. Grading model
+
+[Future Verified] Scoring MUST be binary per gradable section.
+
+[Future Verified] Top summary MUST show correct / total questions.
+
+[Future Verified] Pending-review sections remain in total but do not count as correct.
+
+[Future Verified] Multiple-answer questions are correct only when selected option ID set exactly equals correct option ID set.
+
+[Future Verified] Text-input answers are correct only by raw exact match against answer-key allowed strings.
+
+[Future Verified] Code answers are correct only when all configured autotests pass.
+
+[Future Verified] Missing submission item MUST become "Ожидает проверки" and count as not correct.
+
+## 5. Code grading runtime
+
+[Future Verified] Code grading MUST use Pyodide Worker, aligned with generated runtime behavior.
+
+[Future Verified] Python state MUST be fresh per test run.
+
+[Future Verified] Timeout/stop/restart capability is required.
+
+[Future Verified] Package allowlist MUST come from assessment/key metadata.
+
+[Future Verified] Autotest types:
+- input/print: raw exact output comparison;
+- function: structured call data;
+- class/scenario: assert-based script.
+
+[Future Verified] Runtime failure SHOULD produce pending-review or failed technical state that Author can override.
+
+## 6. verified-assessment HTML layout
+
+[Future Verified] verified-assessment.html MUST follow assessment layout:
+- top bar;
+- sidebar;
+- main content;
+- readonly sections.
+
+[Future Verified] At the top of main content, large summary MUST show correct / total.
+
+[Future Verified] Sidebar items MUST show status:
+- "Верно";
+- "Неверно";
+- "Ожидает проверки".
+
+[Future Verified] Section border MUST be green for correct, red for incorrect and neutral/warning for pending review.
+
+[Future Verified] Status MUST be shown by text+icon+color.
+
+## 7. Question result display
+
+[Future Verified] For choice questions:
+- correct selected/expected results SHOULD be highlighted green;
+- incorrect results SHOULD be highlighted red;
+- student selection MUST be visible;
+- optional comment block appears below result.
+
+[Future Verified] For text-input questions:
+- student submitted answer MUST be shown;
+- list of correct answer variants MUST be shown below;
+- optional comment block appears below.
+
+[Future Verified] For missing answers:
+- section status is pending review;
+- missing state MUST be explicit, not silently treated as a normal wrong answer.
+
+## 8. Code result display
+
+[Future Verified] Code section MUST show, top to bottom:
+- student's submitted code;
+- autotest results;
+- expected code when answer-key visibility flag allows it;
+- optional comment block.
+
+[Future Verified] Autotest result display MUST show summary and failed tests.
+
+[Future Verified] Hidden tests MUST NOT reveal input/expected details in verified student report.
+
+[Future Verified] If expected code visibility flag is false, expected code MUST NOT be shown in student-facing verified HTML.
+
+## 9. Persistence and source of truth
+
+[Future Verified] saved verified-assessment.html MUST be self-contained for report purposes.
+
+[Future Verified] Comments, manual overrides, automatic results and summary MUST be stored inside verified HTML manifest.
+
+[Future Verified] No separate feedback JSON is required by the selected flow.
+
+[Future Verified] Reopening verified HTML in review mode MUST use its embedded manifest and source IDs, not source file paths.
+
+## 10. Student feedback audience
+
+[Future Verified] verified-assessment.html is intended to be sent to Student as feedback.
+
+[Future Verified] It MUST avoid teacher-only technical details unless explicitly allowed by answer-key visibility flags.
+
+[Future Verified] It MUST NOT require answer-key JSON to open as student report.
+
+[Future Verified] It SHOULD remain readable if Monaco/Pyodide runtime is unavailable because code is readonly in verified output.
+
+## 11. Builder behavior reuse
+
+[Future Verified] Review builder SHOULD reuse:
+- assessment renderer;
+- section status components;
+- rich text comment editor;
+- manifest validation;
+- Pyodide worker grading adapter;
+- artifact save/open pipeline.
+
+[Future Verified] Review builder MUST NOT expose ordinary assessment authoring operations such as add section, delete block, reorder tasks or edit original answers.
+
+## 12. Tests
+
+[Future Verified] Future tests SHOULD include:
+- strict validation failure for mismatched documentId;
+- missing submission item becomes pending review;
+- exact set multiple-answer grading;
+- raw exact text answer grading;
+- code all-pass and failed-test grading;
+- manual override wins;
+- comments persisted inside verified HTML;
+- hidden tests do not reveal input/expected;
+- reopen verified in review mode.

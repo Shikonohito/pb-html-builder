@@ -1,0 +1,862 @@
+# PbHtmlBuilder interview log, 2026-06-16
+
+Этот файл фиксирует вопросы, варианты ответов и выбранные ответы интервью по vision проекта.
+
+Формат:
+- Вопрос: текст вопроса.
+- Варианты: все предложенные варианты ответа.
+- Выбранный ответ: ответ пользователя. Если пользователь выбрал free-form Other, записан фактический текст ответа.
+
+## Блок 1. Источник истины, ответы assessment, первая версия
+
+1. Вопрос: Что должно быть главным источником истины для редактирования проекта после сохранения?
+   Варианты: HTML-манифест (Recommended); Проект плюс export; Двойной формат.
+   Выбранный ответ: HTML-манифест (Recommended).
+
+2. Вопрос: Как assessment должен переносить ответы между устройствами без сервера?
+   Варианты: JSON рядом (Recommended); Встроить в HTML; Экспорт вручную.
+   Выбранный ответ: JSON рядом (Recommended).
+
+3. Вопрос: Какой уровень полноты должен считаться успешной первой версией?
+   Варианты: Vertical slice (Recommended); Все типы страниц; Только builder core.
+   Выбранный ответ: Полный рабочий theory.
+
+## Блок 2. Хостинг, ассеты, офлайн
+
+4. Вопрос: В какой оболочке должен жить builder как Windows-only инструмент?
+   Варианты: WebView2 shell (Recommended); Localhost browser; Обычный сайт.
+   Выбранный ответ: Localhost browser.
+
+5. Вопрос: Как финальные HTML должны подключать Monaco/Pyodide/CSS/JS после релиза?
+   Варианты: GitHub Pages (Recommended); Локальный bundle; Гибрид fallback.
+   Выбранный ответ: Свои CSS и JS через GitHub Pages. Monaco и Pyodide через официальные API.
+
+6. Вопрос: Должны ли student-facing HTML работать полностью без интернета после генерации?
+   Варианты: Нет, нужен CDN (Recommended); Да, обязательно; Только чтение.
+   Выбранный ответ: Нет, нужен CDN (Recommended).
+
+## Блок 3. Blazor render mode, файлы, lifecycle
+
+7. Вопрос: Какой Blazor render mode считаем базовым для builder на localhost?
+   Варианты: Interactive Server (Recommended); Interactive WASM; SSR плюс islands.
+   Выбранный ответ: Interactive Server (Recommended).
+
+8. Вопрос: Как должны работать кнопки выбора пути в localhost-браузере?
+   Варианты: Windows dialogs (Recommended); Browser picker; Manual paths.
+   Выбранный ответ: Browser picker.
+
+9. Вопрос: Как builder должен запускаться и закрываться на Windows?
+   Варианты: Single exe (Recommended); Dev command; Tray/service.
+   Выбранный ответ: Dev command.
+
+## Блок 4. Браузер, assessment files, schema
+
+10. Вопрос: На какой браузер можно официально опереться для builder и File System Access API?
+    Варианты: Edge/Chrome only (Recommended); Любой браузер; Edge only.
+    Выбранный ответ: Edge/Chrome only (Recommended).
+
+11. Вопрос: Какие JSON-файлы должны существовать вокруг assessment и verified-assessment?
+    Варианты: Key плюс submission (Recommended); Один answers JSON; Только submission.
+    Выбранный ответ: Key плюс submission (Recommended).
+
+12. Вопрос: Как строго нужно относиться к стабильным ID и версиям схемы внутри HTML/JSON?
+    Варианты: Строго с v1 (Recommended); Минимально; Человекочитаемо.
+    Выбранный ответ: Строго с v1 (Recommended).
+
+## Блок 5. Rich text, editing engine, undo
+
+13. Вопрос: В каком формате хранить редактируемый rich text внутри манифеста?
+    Варианты: Typed AST (Recommended); HTML fragments; Markdown subset.
+    Выбранный ответ: Typed AST (Recommended).
+
+14. Вопрос: На чём строить поведение выделения, inline-форматирования и контекстных меню?
+    Варианты: Custom limited (Recommended); ProseMirror/TipTap; contenteditable raw.
+    Выбранный ответ: Custom limited (Recommended).
+
+15. Вопрос: Какой уровень undo/redo нужен для первой полной theory-версии?
+    Варианты: Command-level (Recommended); Snapshot-level; Minimal text.
+    Выбранный ответ: Command-level (Recommended).
+
+## Блок 6. Путь, autosave, metadata
+
+16. Вопрос: Как трактовать поле пути на стартовой странице при browser picker в Edge/Chrome?
+    Варианты: Handle status (Recommended); Manual path only; Require full path.
+    Выбранный ответ: Поле пути содержит относительный путь к папке. Название файла будет вводиться отдельно.
+
+17. Вопрос: Где должны храниться 10 autosave-слотов builder-а?
+    Варианты: IndexedDB handles (Recommended); AppData sidecars; Внутри HTML.
+    Выбранный ответ: IndexedDB handles (Recommended).
+
+18. Вопрос: Как встраивать builder metadata в итоговый HTML?
+    Варианты: JSON script tag (Recommended); HTML comments; Data attributes.
+    Выбранный ответ: JSON script tag (Recommended).
+
+## Блок 7. Generated HTML, versions, media
+
+19. Вопрос: Как финальный HTML должен использовать встроенный manifest?
+    Варианты: Static DOM плюс manifest (Recommended); Manifest-rendered; DOM as source.
+    Выбранный ответ: Static DOM плюс manifest (Recommended).
+
+20. Вопрос: Как версионировать CSS/JS с GitHub Pages и Monaco/Pyodide в сгенерированных HTML?
+    Варианты: Pinned versions (Recommended); Latest always; Channel switch.
+    Выбранный ответ: Latest always.
+
+21. Вопрос: Как обращаться с картинками и видео в theory/practice/assessment?
+    Варианты: External URLs (Recommended); Embed images; Managed assets.
+    Выбранный ответ: External URLs (Recommended).
+
+## Блок 8. Theory map, nesting, tables
+
+22. Вопрос: Как должна вести себя карта секций в theory.html?
+    Варианты: Fixed 6 cells (Recommended); Dynamic grid; Auto from sections.
+    Выбранный ответ: Fixed 6 cells (Recommended).
+
+23. Вопрос: Насколько глубоко можно вкладывать контентные блоки внутрь специальных блоков и вопросов?
+    Варианты: One-level only (Recommended); Recursive blocks; Flat only.
+    Выбранный ответ: One-level only (Recommended).
+
+24. Вопрос: Какая таблица нужна в первой полной theory-версии?
+    Варианты: Simple table (Recommended); Rich table; Read-only paste.
+    Выбранный ответ: Simple table (Recommended).
+
+## Блок 9. Python runtime
+
+25. Вопрос: Какое состояние Python должно быть между запусками Monaco-блоков в student HTML?
+    Варианты: Fresh per run (Recommended); Shared per page; Shared per section.
+    Выбранный ответ: Fresh per run (Recommended).
+
+26. Вопрос: Какие Python-пакеты должны быть доступны студентам в HTML?
+    Варианты: Stdlib only (Recommended); Allowlist packages; micropip open.
+    Выбранный ответ: Allowlist packages.
+
+27. Вопрос: Как обрабатывать бесконечные циклы и долгий Python-код?
+    Варианты: Worker timeout (Recommended); UI thread simple; No hard timeout.
+    Выбранный ответ: Worker timeout (Recommended).
+
+## Блок 10. Practice behavior
+
+28. Вопрос: Что означает Hidden у автотестов practice, если тесты лежат в открытом HTML?
+    Варианты: UI-hidden only (Recommended); Obfuscate tests; External key.
+    Выбранный ответ: UI-hidden only (Recommended).
+
+29. Вопрос: Должны ли code/status/debug результаты в practice.html переживать обновление страницы?
+    Варианты: No persistence (Recommended); Session only; Local restore.
+    Выбранный ответ: No persistence (Recommended).
+
+30. Вопрос: Как показывать задания practice при клике по topbar task?
+    Варианты: Single active (Recommended); Scroll to section; Hybrid tabs.
+    Выбранный ответ: Single active (Recommended).
+
+## Блок 11. Assessment submission and keys
+
+31. Вопрос: Как student-facing assessment.html должен записывать submission JSON без сервера?
+    Варианты: Pick JSON handle (Recommended); Export/import buttons; Download each save.
+    Выбранный ответ: Pick JSON handle (Recommended).
+
+32. Вопрос: Должен ли assessment.html содержать правильные ответы или автотесты?
+    Варианты: No keys in HTML (Recommended); Obfuscated keys; Visible practice-style.
+    Выбранный ответ: No keys in HTML (Recommended).
+
+33. Вопрос: Можно ли студенту менять ответ после статуса Ответ принят?
+    Варианты: Can revise (Recommended); Locked after submit; Teacher setting.
+    Выбранный ответ: Can revise (Recommended).
+
+## Блок 12. Answer-key and verified inputs
+
+34. Вопрос: Как builder должен создавать и сохранять answer-key JSON для assessment?
+    Варианты: Sidecar key (Recommended); Manual key path; Key in project only.
+    Выбранный ответ: Sidecar key (Recommended).
+
+35. Вопрос: Какие входы нужны для создания verified-assessment.html?
+    Варианты: HTML+key+submission (Recommended); HTML+submission; HTML+key only.
+    Выбранный ответ: HTML+key+submission (Recommended).
+
+36. Вопрос: Где запускать автотесты кода при создании verified-assessment?
+    Варианты: Pyodide worker (Recommended); Server Python; Manual only.
+    Выбранный ответ: Pyodide worker (Recommended).
+
+## Блок 13. Grading and comments
+
+37. Вопрос: Что является одной оцениваемой единицей в assessment/verified?
+    Варианты: One item per section (Recommended); Many per section; Page-level mixed.
+    Выбранный ответ: One item per section (Recommended).
+
+38. Вопрос: Как manual mark в verified влияет на результат автопроверки?
+    Варианты: Override wins (Recommended); Auto stays; Separate fields.
+    Выбранный ответ: Override wins (Recommended).
+
+39. Вопрос: Где сохранять комментарии и ручные проверки verified-assessment?
+    Варианты: Inside verified HTML (Recommended); Feedback JSON; Both.
+    Выбранный ответ: Inside verified HTML (Recommended).
+
+## Блок 14. Solution architecture
+
+40. Вопрос: Какую структуру .NET solution предпочесть для проекта?
+    Варианты: Layered projects (Recommended); Single Blazor app; Plugin-like modules.
+    Выбранный ответ: Layered projects (Recommended).
+
+41. Вопрос: Где должна жить логика файлового picker-а, Monaco, Pyodide и drag/drop?
+    Варианты: Thin JS adapters (Recommended); JS-heavy editor; C# wherever possible.
+    Выбранный ответ: Thin JS adapters (Recommended).
+
+42. Вопрос: Какой уровень тестирования нужен уже для первой полной theory-версии?
+    Варианты: Unit+browser (Recommended); Unit only; Manual first.
+    Выбранный ответ: Unit+browser (Recommended).
+
+## Блок 15. Input model, responsive, language
+
+43. Вопрос: Какие устройства и способы ввода официально поддерживает builder?
+    Варианты: Desktop mouse+keyboard (Recommended); Keyboard accessible; Touch too.
+    Выбранный ответ: Desktop mouse+keyboard (Recommended).
+
+44. Вопрос: Насколько responsive должны быть generated HTML для студентов?
+    Варианты: Desktop+tablet (Recommended); Full mobile; Desktop only.
+    Выбранный ответ: Desktop+tablet (Recommended).
+
+45. Вопрос: Какую языковую стратегию заложить для builder и generated HTML?
+    Варианты: Russian fixed (Recommended); RU with constants; Bilingual now.
+    Выбранный ответ: Английский по умолчанию, но все строки собраны в ресурсы/константы для будущей локализации.
+
+## Блок 16. Visual, theme, motion
+
+46. Вопрос: Какой визуальный характер должен быть у builder и generated HTML?
+    Варианты: Quiet tool (Recommended); Course-branded; Template themes.
+    Выбранный ответ: Course-branded.
+
+47. Вопрос: Как должна сохраняться light/dark theme в generated HTML?
+    Варианты: Per browser (Recommended); Inside submission; System default only.
+    Выбранный ответ: Per browser (Recommended).
+
+48. Вопрос: Как относиться к анимациям стартовой страницы, sidebar и insert/drop affordances?
+    Варианты: Reduced-motion aware (Recommended); Always animated; Minimal motion.
+    Выбранный ответ: Always animated.
+
+## Блок 17. Relative path, collisions, recovery
+
+49. Вопрос: Относительно чего считается путь к папке на стартовой странице?
+    Варианты: Chosen root folder (Recommended); App working dir; HTML location.
+    Выбранный ответ: App working dir.
+
+50. Вопрос: Что делать при Create/Save, если целевой HTML или JSON уже существует?
+    Варианты: Confirm overwrite (Recommended); Auto suffix; Block save.
+    Выбранный ответ: Confirm overwrite (Recommended).
+
+51. Вопрос: Должна ли стартовая страница показывать recent projects/autosave recovery?
+    Варианты: Recovery list (Recommended); Only new/open; No recovery UI.
+    Выбранный ответ: Recovery list (Recommended).
+
+## Блок 18. Context menu, hotkeys, dirty state
+
+52. Вопрос: Где builder должен перехватывать правую кнопку мыши?
+    Варианты: Editor surface only (Recommended); Whole app; Only selected nodes.
+    Выбранный ответ: Whole app.
+
+53. Вопрос: Как разделить hotkeys между rich text, structural editor и Monaco?
+    Варианты: Focused scope (Recommended); Global commands; Browser-native text.
+    Выбранный ответ: Focused scope (Recommended).
+
+54. Вопрос: Как предупреждать о несохранённых изменениях?
+    Варианты: Before unload (Recommended); Autosave enough; Explicit modal.
+    Выбранный ответ: Before unload (Recommended).
+
+## Блок 19. Manifest, open validation, migrations
+
+55. Вопрос: Как форматировать JSON manifest внутри HTML?
+    Варианты: Compact JSON (Recommended); Pretty JSON; Compressed blob.
+    Выбранный ответ: Compact JSON (Recommended).
+
+56. Вопрос: Что делать при открытии HTML с metadata, которые не проходят validation?
+    Варианты: Report and block (Recommended); Best-effort repair; Read-only open.
+    Выбранный ответ: Report and block (Recommended).
+
+57. Вопрос: Как обрабатывать старые schemaVersion после обновления builder-а?
+    Варианты: Explicit migrations (Recommended); Latest only; Lenient parse.
+    Выбранный ответ: Explicit migrations (Recommended).
+
+## Блок 20. Trust, embeds, links
+
+58. Вопрос: Какой trust model у автора, который создаёт HTML в builder?
+    Варианты: Trusted author, safe output (Recommended); Fully trusted; Untrusted authors.
+    Выбранный ответ: Fully trusted.
+
+59. Вопрос: Какие video embeds разрешить в generated HTML?
+    Варианты: Provider allowlist (Recommended); Any iframe URL; Links only.
+    Выбранный ответ: Any iframe URL.
+
+60. Вопрос: Как обрабатывать ссылки в rich text?
+    Варианты: Safe protocols (Recommended); HTTPS only; Any URL.
+    Выбранный ответ: Any URL.
+
+## Блок 21. Student browser, network, CSP
+
+61. Вопрос: Какие браузеры официально поддерживают generated HTML у студентов?
+    Варианты: Edge/Chrome interactive (Recommended); All modern; Edge only.
+    Выбранный ответ: Edge/Chrome interactive (Recommended).
+
+62. Вопрос: Какие сетевые обращения разрешены generated HTML?
+    Варианты: Assets/media only (Recommended); Allow telemetry; No policy.
+    Выбранный ответ: Assets/media only (Recommended).
+
+63. Вопрос: Нужна ли Content Security Policy в generated HTML?
+    Варианты: Documented loose CSP (Recommended); No CSP; Strict CSP.
+    Выбранный ответ: No CSP.
+
+## Блок 22. Artifact naming, folders, backups
+
+64. Вопрос: Как именовать связанные HTML/JSON artifacts по умолчанию?
+    Варианты: Stem suffixes (Recommended); Type suffixes; Folders per project.
+    Выбранный ответ: Type suffixes.
+
+65. Вопрос: Что делать, если относительная папка сохранения не существует?
+    Варианты: Create folders (Recommended); Block and ask; Picker required.
+    Выбранный ответ: Create folders (Recommended).
+
+66. Вопрос: Нужны ли backup-файлы при Save/migration/overwrite?
+    Варианты: Backup on risky save (Recommended); Autosave enough; Every save backup.
+    Выбранный ответ: Backup on risky save (Recommended).
+
+## Блок 23. Feature partitioning, state, renderer
+
+67. Вопрос: Как разделять реализацию theory/practice/assessment внутри архитектуры?
+    Варианты: Shared core + profiles (Recommended); Separate builders; Theory first fork.
+    Выбранный ответ: Separate builders.
+
+68. Вопрос: Как организовать состояние builder-а в Blazor?
+    Варианты: Central document store (Recommended); Component state; Flux library.
+    Выбранный ответ: Central document store (Recommended).
+
+69. Вопрос: Как генерировать static DOM для exported HTML?
+    Варианты: Typed C# renderer (Recommended); Razor templates; JS renderer.
+    Выбранный ответ: Typed C# renderer (Recommended).
+
+## Блок 24. Create semantics, verified creation, sidecars
+
+70. Вопрос: Должна ли кнопка Create сразу записывать новый HTML/JSON на диск?
+    Варианты: Set target only (Recommended); Write immediately; Ask on exit.
+    Выбранный ответ: Set target only (Recommended).
+
+71. Вопрос: Что происходит после New Verified Assessment и выбора входных файлов?
+    Варианты: Open review builder (Recommended); Generate directly; Two-step wizard.
+    Выбранный ответ: Open review builder (Recommended).
+
+72. Вопрос: Когда создавать answer-key/submission sidecar files?
+    Варианты: On save/first answer (Recommended); On create; Manual export.
+    Выбранный ответ: On save/first answer (Recommended).
+
+## Блок 25. Autotest comparison
+
+73. Вопрос: Как сравнивать output в input/print автотестах?
+    Варианты: Normalized exact (Recommended); Raw exact; Regex expected.
+    Выбранный ответ: Raw exact.
+
+74. Вопрос: Как хранить function автотесты в key JSON?
+    Варианты: Structured call (Recommended); Python expression; Assertion script.
+    Выбранный ответ: Structured call (Recommended).
+
+75. Вопрос: Как class/scenario автотест должен сообщать pass/fail?
+    Варианты: Assertions required (Recommended); Return boolean; Expected stdout.
+    Выбранный ответ: Assertions required (Recommended).
+
+## Блок 26. Packages, timeout, input()
+
+76. Вопрос: Где задавать Pyodide package allowlist?
+    Варианты: Per document (Recommended); Per block; Global fixed.
+    Выбранный ответ: Per document (Recommended).
+
+77. Вопрос: Какой timeout по умолчанию поставить для Run/Debug?
+    Варианты: 5 seconds (Recommended); 2 seconds; Configurable only.
+    Выбранный ответ: Configurable only.
+
+78. Вопрос: Как обычный Run должен обрабатывать Python input() вне автотестов?
+    Варианты: Prompt queue (Recommended); No input allowed; Predefined stdin.
+    Выбранный ответ: Prompt queue (Recommended).
+
+## Блок 27. Drag, delete, drop UX
+
+79. Вопрос: Откуда начинается drag секций и блоков в builder?
+    Варианты: Dedicated handles (Recommended); Whole block; Modifier drag.
+    Выбранный ответ: Dedicated handles (Recommended).
+
+80. Вопрос: Нужно ли подтверждать удаление секций и крупных блоков?
+    Варианты: Undo only (Recommended); Confirm sections; Confirm all.
+    Выбранный ответ: Undo only (Recommended).
+
+81. Вопрос: Как показывать место вставки/перетаскивания при hover?
+    Варианты: Insertion rail (Recommended); Ghost space; Overlay only.
+    Выбранный ответ: Insertion rail (Recommended).
+
+## Блок 28. File IO authority
+
+82. Вопрос: Кто фактически читает/пишет builder artifacts (html, answer-key) при Save/Open?
+    Варианты: Backend working-dir (Recommended); Browser handles; Hybrid by action.
+    Выбранный ответ: Backend working-dir (Recommended).
+
+83. Вопрос: Можно ли builder писать за пределы app working dir?
+    Варианты: Working dir only (Recommended); Any path; Configured roots.
+    Выбранный ответ: Working dir only (Recommended).
+
+84. Вопрос: Можно ли открывать существующий project HTML вне app working dir?
+    Варианты: Copy/import into root (Recommended); Open in place; Root only.
+    Выбранный ответ: Copy/import into root (Recommended).
+
+## Блок 29. Assessment item and status
+
+85. Вопрос: Как builder должен ограничивать gradable content в assessment-секции?
+    Варианты: Exactly one item (Recommended); At most one item; No hard limit.
+    Выбранный ответ: Exactly one item (Recommended).
+
+86. Вопрос: Как студент принимает multiple-choice ответ в assessment?
+    Варианты: Explicit submit (Recommended); Toggle accepts; Auto after delay.
+    Выбранный ответ: Toggle accepts.
+
+87. Вопрос: Какие цвета статуса показывать в обычном assessment.html без answer-key?
+    Варианты: Neutral accepted (Recommended); Green accepted; No colors.
+    Выбранный ответ: Neutral accepted (Recommended).
+
+## Блок 30. Verified scoring
+
+88. Вопрос: Как считать верные / всего в verified-assessment?
+    Варианты: Binary per section (Recommended); Partial tests; Status count.
+    Выбранный ответ: Binary per section (Recommended).
+
+89. Вопрос: Что показывать в verified для code автотестов?
+    Варианты: Summary + failures (Recommended); All details; Summary only.
+    Выбранный ответ: Summary + failures (Recommended).
+
+90. Вопрос: Всегда ли показывать expected code в verified code-секции?
+    Варианты: Teacher controlled (Recommended); Always show; Never show.
+    Выбранный ответ: Teacher controlled (Recommended).
+
+## Блок 31. Theory quiz
+
+91. Вопрос: Как проверять open text answer в theory question-блоках?
+    Варианты: Normalized exact (Recommended); Raw exact; Regex answers.
+    Выбранный ответ: Raw exact.
+
+92. Вопрос: Как theory quiz должен вести себя после выбора/ответа?
+    Варианты: Can retry (Recommended); Lock after answer; Reveal all.
+    Выбранный ответ: Can retry (Recommended).
+
+93. Вопрос: Какой формат у feedback в question blocks?
+    Варианты: Rich text AST (Recommended); Inline rich text; Plain text.
+    Выбранный ответ: Rich text AST (Recommended).
+
+## Блок 32. Sidebar and anchors
+
+94. Вопрос: Как сохранять состояние collapsed/expanded sidebar в generated HTML?
+    Варианты: Per browser (Recommended); No persistence; In submission.
+    Выбранный ответ: No persistence.
+
+95. Вопрос: Как подсвечивать активный пункт sidebar/topbar?
+    Варианты: Scroll observer (Recommended); Click only; No active state.
+    Выбранный ответ: Scroll observer (Recommended).
+
+96. Вопрос: Как формировать anchors для секций и карты секций?
+    Варианты: Stable IDs (Recommended); Slug from title; Number-based.
+    Выбранный ответ: Stable IDs (Recommended).
+
+## Блок 33. Runtime loading and scale
+
+97. Вопрос: Когда загружать Monaco и Pyodide в generated HTML?
+    Варианты: Lazy on demand (Recommended); Page load; Author setting.
+    Выбранный ответ: Lazy on demand (Recommended).
+
+98. Вопрос: Как builder должен держать Monaco instances при большом документе?
+    Варианты: Mount visible (Recommended); All mounted; Single modal editor.
+    Выбранный ответ: Mount visible (Recommended).
+
+99. Вопрос: На какой размер документа оптимизировать первую версию?
+    Варианты: Medium lessons (Recommended); Small lessons; Large courses.
+    Выбранный ответ: Medium lessons (Recommended).
+
+## Блок 34. Size, undo, autosave snapshots
+
+100. Вопрос: Какой ориентир размера для одного generated HTML без внешних media считать нормальным?
+     Варианты: Under 500 KB (Recommended); Under 200 KB; No hard budget.
+     Выбранный ответ: Under 2 MB.
+
+101. Вопрос: Как ограничивать undo/redo history?
+     Варианты: Last 200 commands (Recommended); Unlimited session; Memory budget.
+     Выбранный ответ: Last 200 commands (Recommended).
+
+102. Вопрос: Что именно сохранять в autosave slots?
+     Варианты: Full manifest snapshots (Recommended); Command log; HTML snapshots.
+     Выбранный ответ: Full manifest snapshots (Recommended).
+
+## Блок 35. Compatibility, CDN failure, data loss
+
+103. Вопрос: Как поддерживать старые generated HTML при latest asset URLs?
+     Варианты: Runtime backward-compatible (Recommended); Builder re-export; No guarantee.
+     Выбранный ответ: Runtime backward-compatible (Recommended).
+
+104. Вопрос: Что должен показать generated HTML, если Monaco/Pyodide/runtime CDN не загрузился?
+     Варианты: Graceful error (Recommended); Blank blocked; Local fallback prompt.
+     Выбранный ответ: Graceful error (Recommended).
+
+105. Вопрос: Какой уровень защиты от потери работы обязателен для builder v1?
+     Варианты: Autosave+dirty+backup (Recommended); Transactional saves; Basic only.
+     Выбранный ответ: Autosave+dirty+backup (Recommended).
+
+## Блок 36. Accessibility and statuses
+
+106. Вопрос: Какой accessibility baseline нужен для generated HTML?
+     Варианты: Semantic baseline (Recommended); Visual only; WCAG target.
+     Выбранный ответ: Visual only.
+
+107. Вопрос: Какой accessibility baseline нужен для builder?
+     Варианты: Basic focus (Recommended); Keyboard full; Mouse first only.
+     Выбранный ответ: Basic focus (Recommended).
+
+108. Вопрос: Как кодировать статусы Верно/Неверно/Ответ принят визуально?
+     Варианты: Text+icon+color (Recommended); Color+tooltip; Text only.
+     Выбранный ответ: Text+icon+color (Recommended).
+
+## Блок 37. Testing
+
+109. Вопрос: Как проверять generated HTML output?
+     Варианты: Golden snapshots (Recommended); Structural asserts; Manual inspect.
+     Выбранный ответ: Golden snapshots (Recommended).
+
+110. Вопрос: Какие browser E2E flow обязательны для v1 theory?
+     Варианты: Core authoring (Recommended); Smoke only; Full matrix.
+     Выбранный ответ: Core authoring (Recommended).
+
+111. Вопрос: Как тестировать Pyodide-dependent поведение?
+     Варианты: Browser integration (Recommended); Mock runtime; Manual runtime.
+     Выбранный ответ: Browser integration (Recommended).
+
+## Блок 38. .NET and UI dependencies
+
+112. Вопрос: Какой target framework выбрать для новой Blazor-реализации?
+     Варианты: net10.0 (Recommended); net8.0 LTS; Match installed.
+     Выбранный ответ: net10.0 (Recommended).
+
+113. Вопрос: Как относиться к Blazor UI component libraries?
+     Варианты: Custom CSS/components (Recommended); Fluent UI Blazor; MudBlazor.
+     Выбранный ответ: Custom CSS/components (Recommended).
+
+114. Вопрос: Какие иконки использовать для builder/runtime UI?
+     Варианты: Lucide icons (Recommended); Custom SVGs; Mixed icons.
+     Выбранный ответ: Основа Lucide icons + custom SVGs.
+
+## Блок 39. JS/CSS pipeline and publish
+
+115. Вопрос: Как собирать собственный JS runtime для generated HTML и builder adapters?
+     Варианты: TypeScript bundle (Recommended); Plain JS modules; Blazor-only JS.
+     Выбранный ответ: TypeScript bundle (Recommended).
+
+116. Вопрос: Как организовать CSS для builder и generated HTML?
+     Варианты: Tokenized CSS (Recommended); Single stylesheet; CSS framework.
+     Выбранный ответ: Tokenized CSS (Recommended).
+
+117. Вопрос: Как публиковать собственные CSS/JS на GitHub Pages?
+     Варианты: CI publish (Recommended); Manual copy; Local only first.
+     Выбранный ответ: CI publish (Recommended).
+
+## Блок 40. Asset URLs and CI gate
+
+118. Вопрос: Как builder выбирает local assets в dev и GitHub Pages assets в export?
+     Варианты: Environment config (Recommended); UI switch; Hardcoded latest.
+     Выбранный ответ: Environment config (Recommended).
+
+119. Вопрос: Что штамповать в generated HTML metadata?
+     Варианты: Builder+schema+runtime (Recommended); Schema only; Full build info.
+     Выбранный ответ: Builder+schema+runtime (Recommended).
+
+120. Вопрос: Какие проверки должны блокировать release/Pages publish?
+     Варианты: Build+unit+browser (Recommended); Build+unit only; Manual release.
+     Выбранный ответ: Build+unit+browser (Recommended).
+
+## Блок 41. Documentation style
+
+121. Вопрос: На каком языке писать итоговые vision-*.txt файлы?
+     Варианты: Russian spec (Recommended); English spec; Mixed by area.
+     Выбранный ответ: Russian spec (Recommended).
+
+122. Вопрос: В каком стиле оформить требования в файлах?
+     Варианты: Normative bullets (Recommended); Narrative vision; Decision log.
+     Выбранный ответ: Normative bullets (Recommended).
+
+123. Вопрос: Куда поместить риски, опасения и tradeoffs?
+     Варианты: Requirements risks (Recommended); Architecture only; Inline everywhere.
+     Выбранный ответ: Requirements risks (Recommended).
+
+## Блок 42. Project naming and domain boundaries
+
+124. Вопрос: Как именовать .NET projects/namespaces в architecture spec?
+     Варианты: Pb.Builder.* (Recommended); PbHtmlBuilder.*; Decide from repo.
+     Выбранный ответ: PbHtmlBuilder.*.
+
+125. Вопрос: Как организовать папки внутри UI/Application по feature areas?
+     Варианты: By builder type (Recommended); By technical kind; Hybrid strict.
+     Выбранный ответ: By builder type (Recommended).
+
+126. Вопрос: Что считать Domain layer, а что Application/UI?
+     Варианты: Pure document core (Recommended); Include rendering; Thin domain.
+     Выбранный ответ: Pure document core (Recommended).
+
+## Блок 43. Roles and auth
+
+127. Вопрос: Какие роли явно описывать в требованиях?
+     Варианты: Author/student/reviewer (Recommended); Author/student only; No roles.
+     Выбранный ответ: Author/student only.
+
+128. Вопрос: Нужна ли authentication/authorization в builder или generated HTML?
+     Варианты: No auth (Recommended); Local PIN; Future only.
+     Выбранный ответ: No auth (Recommended).
+
+129. Вопрос: Нужно ли сохранять имя проверяющего и timestamps в verified comments?
+     Варианты: Timestamp only (Recommended); Reviewer name; No audit info.
+     Выбранный ответ: No audit info.
+
+## Блок 44. Student identity and submission naming
+
+130. Вопрос: Должен ли submission JSON содержать данные студента?
+     Варианты: Optional profile (Recommended); Required identity; No identity.
+     Выбранный ответ: No identity.
+
+131. Вопрос: Как предлагать имя submission JSON студенту?
+     Варианты: Assessment stem + name (Recommended); Fixed suffix; Student chooses.
+     Выбранный ответ: Fixed suffix.
+
+132. Вопрос: Где студент редактирует свои profile fields?
+     Варианты: Small header panel (Recommended); Start modal; No UI.
+     Выбранный ответ: No UI.
+
+## Блок 45. Brand and labels
+
+133. Вопрос: Как обращаться с Python Bootcamp и copyright в generated HTML?
+     Варианты: Configurable defaults (Recommended); Fixed constants; Template-only.
+     Выбранный ответ: Configurable defaults (Recommended).
+
+134. Вопрос: Как разделить filename, browser title, h1 и sidebar/task titles?
+     Варианты: Separate fields (Recommended); One title everywhere; Advanced metadata.
+     Выбранный ответ: Separate fields (Recommended).
+
+135. Вопрос: На каком языке должны быть default labels в generated HTML после решения про English UI?
+     Варианты: English defaults (Recommended); Russian content labels; Per document locale.
+     Выбранный ответ: Russian content labels.
+
+## Блок 46. Theory V1 and future docs
+
+136. Вопрос: Что обязательно входит в полный рабочий theory для первой версии?
+     Варианты: Full author+student (Recommended); Authoring first; Student first.
+     Выбранный ответ: Full author+student (Recommended).
+
+137. Вопрос: Насколько подробно фиксировать practice/assessment/verified в этих vision-файлах сейчас?
+     Варианты: Decision-level complete (Recommended); Full equal detail; Brief future.
+     Выбранный ответ: Full equal detail.
+
+138. Вопрос: Как принимать готовность theory v1?
+     Варианты: Golden sample lesson (Recommended); Checklist only; Multiple samples.
+     Выбранный ответ: Golden sample lesson (Recommended).
+
+## Блок 47. ID policy
+
+139. Вопрос: Какой формат stable IDs использовать в manifest/key/submission?
+     Варианты: Short random IDs (Recommended); GUID/UUID; Deterministic slug IDs.
+     Выбранный ответ: Short random IDs (Recommended).
+
+140. Вопрос: Как отображать номера секций после reorder/delete?
+     Варианты: Recompute display (Recommended); Persistent numbers; Author editable.
+     Выбранный ответ: Recompute display (Recommended).
+
+141. Вопрос: Можно ли переиспользовать ID удалённых секций/блоков?
+     Варианты: Never reuse (Recommended); Reuse after undo; May reuse.
+     Выбранный ответ: Reuse after undo.
+
+## Блок 48. Single tab/document lock
+
+142. Вопрос: Как enforce-ить ограничение на одну вкладку builder-а?
+     Варианты: Soft lock (Recommended); No enforcement; Hard server lock.
+     Выбранный ответ: Soft lock (Recommended).
+
+143. Вопрос: Можно ли открыть несколько документов внутри одной вкладки builder-а?
+     Варианты: One document only (Recommended); Recent switcher; Background docs.
+     Выбранный ответ: One document only (Recommended).
+
+144. Вопрос: Что делать со stale lock, если вкладка упала?
+     Варианты: Timeout takeover (Recommended); Manual clear; Ignore stale.
+     Выбранный ответ: Timeout takeover (Recommended).
+
+## Блок 49. Dev launch
+
+145. Вопрос: Какой dev launch flow считать официальным?
+     Варианты: PowerShell scripts (Recommended); dotnet run; IDE only.
+     Выбранный ответ: PowerShell scripts (Recommended).
+
+146. Вопрос: Должен ли dev launch автоматически открывать браузер?
+     Варианты: Auto open (Recommended); Print URL only; Configurable.
+     Выбранный ответ: Print URL only.
+
+147. Вопрос: Как выбирать localhost port?
+     Варианты: Configured with fallback (Recommended); Fixed port; Random port.
+     Выбранный ответ: Configured with fallback (Recommended).
+
+## Блок 50. Project commands and save UX
+
+148. Вопрос: Где показывать Project commands (Open, Save, Save as) помимо context menu?
+     Варианты: Context + statusbar (Recommended); Context only; Top menu.
+     Выбранный ответ: Context only.
+
+149. Вопрос: Как показывать результат Save/Autosave?
+     Варианты: Toast + status (Recommended); Toast only; Silent autosave.
+     Выбранный ответ: Toast only.
+
+150. Вопрос: Что делает Save as... с текущим document identity?
+     Варианты: New documentId (Recommended); Keep documentId; Ask each time.
+     Выбранный ответ: New documentId (Recommended).
+
+## Блок 51. Clipboard, paste, duplicate
+
+151. Вопрос: Нужно ли поддерживать copy/paste для секций и блоков в builder v1?
+     Варианты: Internal only (Recommended); Full clipboard; Out of scope.
+     Выбранный ответ: Internal only (Recommended).
+
+152. Вопрос: Как обрабатывать вставку внешнего HTML/Word/web content в rich text?
+     Варианты: Plain text default (Recommended); Sanitized rich paste; Block paste.
+     Выбранный ответ: Plain text default (Recommended).
+
+153. Вопрос: Нужна ли команда Duplicate для секций/блоков?
+     Варианты: Blocks only (Recommended); Sections and blocks; No duplicate.
+     Выбранный ответ: Sections and blocks.
+
+## Блок 52. Student open mode and file API
+
+154. Вопрос: Как студенты обычно открывают generated HTML?
+     Варианты: Double-click file (Recommended); Local server; Hosted page.
+     Выбранный ответ: Double-click file (Recommended).
+
+155. Вопрос: Что делать, если submission JSON handle API недоступен в opened assessment?
+     Варианты: Show blocked state (Recommended); Fallback export; LocalStorage only.
+     Выбранный ответ: Show blocked state (Recommended).
+
+156. Вопрос: Нужно ли включить file:// smoke tests для generated HTML?
+     Варианты: Yes required (Recommended); HTTP only tests; Manual file test.
+     Выбранный ответ: Yes required (Recommended).
+
+## Блок 53. Verified type and reopen
+
+157. Вопрос: Как классифицировать verified-assessment.html среди типов HTML?
+     Варианты: Derived fourth type (Recommended); Assessment mode; Report only.
+     Выбранный ответ: Derived fourth type (Recommended).
+
+158. Вопрос: Можно ли повторно открыть saved verified-assessment для правки comments/overrides?
+     Варианты: Yes review mode (Recommended); No final artifact; Read-only preview.
+     Выбранный ответ: Yes review mode (Recommended).
+
+159. Вопрос: Должен ли verified HTML хранить ссылки/IDs исходных assessment/key/submission?
+     Варианты: IDs only (Recommended); IDs and paths; No source refs.
+     Выбранный ответ: IDs only (Recommended).
+
+## Блок 54. External dependency versions
+
+160. Вопрос: Как версионировать Monaco и Pyodide в generated HTML?
+     Варианты: Config pinned (Recommended); Latest too; Runtime decides.
+     Выбранный ответ: Config pinned (Recommended).
+
+161. Вопрос: Где хранить URLs источников Monaco/Pyodide?
+     Варианты: Environment config (Recommended); Hardcoded constants; Per document setting.
+     Выбранный ответ: Environment config (Recommended).
+
+162. Вопрос: Что делать, если конкретная версия Monaco/Pyodide больше недоступна?
+     Варианты: Show retry/error (Recommended); Fallback latest; Fallback local.
+     Выбранный ответ: Show retry/error (Recommended).
+
+## Блок 55. Answer-key security and validation
+
+163. Вопрос: Как защищать answer-key JSON от просмотра студентом?
+     Варианты: Plain file, process control (Recommended); Password encrypt; Obfuscate only.
+     Выбранный ответ: Plain file, process control (Recommended).
+
+164. Вопрос: Как verified builder должен валидировать связку assessment HTML/key/submission?
+     Варианты: Strict IDs/schema (Recommended); Warn and continue; Best effort.
+     Выбранный ответ: Strict IDs/schema (Recommended).
+
+165. Вопрос: Как отмечать отсутствующие ответы в submission?
+     Варианты: Pending review (Recommended); Incorrect; Excluded.
+     Выбранный ответ: Pending review (Recommended).
+
+## Блок 56. Assessment answer comparison
+
+166. Вопрос: Как verified проверяет text-input ответы assessment?
+     Варианты: Raw exact (Recommended); Normalized exact; Regex allowlist.
+     Выбранный ответ: Raw exact (Recommended).
+
+167. Вопрос: Как verified проверяет multiple-answer вопросы?
+     Варианты: Exact set (Recommended); Contains all correct; Partial allowed.
+     Выбранный ответ: Exact set (Recommended).
+
+168. Вопрос: Как pending-review секции влияют на верхний score в verified?
+     Варианты: Count as not correct (Recommended); Separate count; Exclude pending.
+     Выбранный ответ: Count as not correct (Recommended).
+
+## Блок 57. V1 start buttons and route stubs
+
+169. Вопрос: Как должны вести себя New Practice/Assessment/Verified на стартовой странице theory-first v1?
+     Варианты: Visible disabled (Recommended); Hidden until ready; Open stubs.
+     Выбранный ответ: Visible disabled (Recommended).
+
+170. Вопрос: Как помечать future-only требования в vision-файлах?
+     Варианты: Status tags (Recommended); Separate sections; No status.
+     Выбранный ответ: Status tags (Recommended).
+
+171. Вопрос: Нужны ли route/page stubs для future builders в architecture?
+     Варианты: Routes reserved (Recommended); No stubs; Full skeleton.
+     Выбранный ответ: Routes reserved (Recommended).
+
+## Блок 58. Vision output files
+
+172. Вопрос: Где должны лежать новые vision-*.txt файлы?
+     Варианты: docs folder (Recommended); Repo root; docs/vision.
+     Выбранный ответ: docs folder (Recommended).
+
+173. Вопрос: Что делать, если такие dated vision-файлы уже существуют?
+     Варианты: Overwrite after review (Recommended); Append version; Merge manually.
+     Выбранный ответ: Overwrite after review (Recommended).
+
+174. Вопрос: Нужно ли в новых файлах явно отделять raw vision от interview decisions?
+     Варианты: Merged spec (Recommended); Trace sections; Transcript style.
+     Выбранный ответ: Merged spec (Recommended).
+
+## Блок 59. Recent projects, settings, recovery matching
+
+175. Вопрос: Откуда стартовая страница берёт recent projects?
+     Варианты: IndexedDB registry (Recommended); Scan working dir; No recent files.
+     Выбранный ответ: IndexedDB registry (Recommended).
+
+176. Вопрос: Где хранить локальные builder settings: brand defaults, preferred port, asset config overrides?
+     Варианты: App config files (Recommended); IndexedDB only; Repo JSON config.
+     Выбранный ответ: App config files (Recommended).
+
+177. Вопрос: Как сопоставлять autosave snapshot с сохранённым HTML?
+     Варианты: documentId+target (Recommended); target path only; documentId only.
+     Выбранный ответ: documentId+target (Recommended).
+
+## Блок 60. Start folder picker and validation
+
+178. Вопрос: Как должна работать кнопка выбора папки на стартовой странице при app-working-dir storage?
+     Варианты: In-app folder picker (Recommended); Browser import picker; Manual path primary.
+     Выбранный ответ: In-app folder picker (Recommended).
+
+179. Вопрос: Можно ли author создавать папки через этот in-app picker?
+     Варианты: Create inside root (Recommended); Select only; No folder UI.
+     Выбранный ответ: Create inside root (Recommended).
+
+180. Вопрос: Как валидировать relative path, введённый вручную?
+     Варианты: Strict relative (Recommended); Normalize lenient; Backend errors.
+     Выбранный ответ: Strict relative (Recommended).
+
+## Блок 61. Verified comments
+
+181. Вопрос: Какой формат у комментария в verified-assessment секции?
+     Варианты: Rich text block (Recommended); Plain text; Full content block.
+     Выбранный ответ: Rich text block (Recommended).
+
+182. Вопрос: Нужен ли обязательный комментарий при ручном override статуса?
+     Варианты: Optional (Recommended); Required on override; Required if wrong.
+     Выбранный ответ: Optional (Recommended).
+
+183. Вопрос: Для кого предназначен generated verified-assessment HTML?
+     Варианты: Student feedback (Recommended); Teacher archive; Both modes.
+     Выбранный ответ: Student feedback (Recommended).

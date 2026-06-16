@@ -1,0 +1,241 @@
+# PbHtmlBuilder vision requirements, 2026-06-16
+
+## 1. Назначение и статусы
+
+Этот документ фиксирует итоговые продуктовые требования к PbHtmlBuilder после интервью 2026-06-16. Формат является нормативной спецификацией, а не стенограммой.
+
+Статусы требований:
+- [V1 Theory] обязательно для первой рабочей версии.
+- [Future Practice] обязательно для будущей реализации practice.html.
+- [Future Assessment] обязательно для будущей реализации assessment.html.
+- [Future Verified] обязательно для будущей реализации verified-assessment.html.
+- [Future Writing Assistance] обязательно для будущих функций помощи при написании текста.
+- [Common] применяется ко всем типам документов и ко всему builder-у.
+
+Первая версия MUST реализовать полный author+student flow для theory.html: создание, редактирование, сохранение, повторное открытие, export, generated student UI, Monaco Run, Pyodide runtime, вопросы, undo и autosave.
+
+Practice, assessment и verified-assessment MUST быть описаны с сопоставимой детализацией, но в V1 их кнопки на стартовой странице SHOULD быть видимыми и disabled/coming soon.
+
+## 2. Роли и модель продукта
+
+[Common] Продукт ориентирован на две роли:
+- Author: создает и редактирует учебные HTML-файлы, answer-key JSON и verified reports.
+- Student: открывает generated HTML, читает материал, запускает код и заполняет assessment.
+
+[Common] Отдельной роли Reviewer в продуктовой модели нет. Проверка verified-assessment считается author-режимом.
+
+[Common] Authentication и authorization не требуются. Файлы, рабочая папка, answer-key JSON и процесс передачи файлов являются границами доступа.
+
+[Common] Инструмент является локальным single-user builder-ом для Windows. Он запускается как localhost browser application, а не как WebView2 shell.
+
+[Common] Builder официально поддерживает одну активную вкладку и один активный документ. Вторая вкладка MUST получать soft-lock предупреждение или blocked screen. Stale lock MUST иметь heartbeat timeout и возможность takeover.
+
+## 3. Типы артефактов
+
+[Common] Основные generated HTML-типы:
+- theory.html.
+- practice.html.
+- assessment.html.
+
+[Future Verified] verified-assessment.html является производным четвертым artifact type. Он создается из assessment HTML, answer-key JSON и submission JSON, но не является самостоятельным authoring type с нуля.
+
+[Common] Default naming для связанных файлов MUST использовать явные type suffixes. Примеры:
+- lesson.theory.html.
+- lesson.practice.html.
+- lesson.assessment.html.
+- lesson.assessment.answer-key.json.
+- lesson.assessment.submission.json.
+- lesson.verified-assessment.html.
+
+[Common] Save As MUST создавать новый documentId, чтобы ключи и submissions старого документа не смешивались с новой копией.
+
+## 4. Источник истины и metadata
+
+[Common] Generated HTML MUST быть главным источником истины для повторного открытия проекта в builder-е.
+
+[Common] Каждый generated HTML MUST содержать:
+- static semantic DOM для student-facing просмотра;
+- compact JSON manifest в отдельном script tag с type="application/json";
+- schemaVersion;
+- builderVersion;
+- runtimeChannel или runtime base URL;
+- timestamps createdAt и updatedAt;
+- documentId;
+- стабильные IDs секций, блоков, вопросов, вариантов и автотестов.
+
+[Common] Manifest SHOULD быть compact/minified ради размера HTML. Для диагностики builder MAY иметь отдельный readable export, но это не основной формат.
+
+[Common] Builder MUST открывать HTML только при наличии валидных metadata. Если metadata не проходят validation, документ MUST быть заблокирован для редактирования с отчетом об ошибках.
+
+[Common] Старые schemaVersion MUST поддерживаться явными миграциями. Перед risky migration/save/overwrite builder SHOULD создавать timestamped backup рядом с файлом.
+
+## 5. IDs, schema и совместимость
+
+[Common] IDs MUST быть короткими random URL-safe identifiers с type prefix, например для секций и блоков.
+
+[Common] Display numbering секций MUST вычисляться из текущего порядка. Номер "01", "02" не является stable identity.
+
+[Common] ID удаленного элемента MAY вернуться только через undo. Новый элемент MUST получать новый ID и не должен переиспользовать удаленный ID.
+
+[Common] Answer-key, submission и verified matching MUST опираться на documentId, schemaVersion compatibility и stable item IDs, а не на порядок или заголовки.
+
+[Common] Так как собственные CSS/JS runtime assets подключаются через GitHub Pages latest, новый runtime MUST быть backward-compatible со старыми schemaVersion через adapters/migrations. Если совместимость невозможна, страница MUST показать понятную ошибку, а не молча изменить поведение.
+
+## 6. Файловая модель builder-а
+
+[Common] Backend является источником authority для Save/Open артефактов builder-а.
+
+[Common] Backend MUST читать и писать только внутри app working dir. Absolute paths, выход через "..", Windows reserved names и invalid chars MUST быть запрещены для ручного relative path.
+
+[Common] Поле пути на стартовой странице содержит relative path к подпапке внутри app working dir. Filename вводится отдельно.
+
+[Common] Кнопка выбора папки MUST открывать in-app folder picker, который показывает подпапки app working dir через backend API. Picker MUST позволять создавать подпапки внутри root после validation имени.
+
+[Common] Файлы вне app working dir MAY быть выбраны через browser picker только для import/copy into root. Builder не должен редактировать такие файлы in place.
+
+[Common] Если папка сохранения не существует, builder SHOULD создать недостающие подпапки после подтверждения Create/Save.
+
+[Common] Если целевой файл уже существует, builder MUST запросить confirm overwrite с указанием типа файла и последнего времени изменения.
+
+## 7. Autosave, dirty state и recovery
+
+[Common] Builder MUST иметь autosave каждые 5 минут и 10 rotating slots. При заполнении слотов самые старые snapshots перезаписываются.
+
+[Common] Autosave slots MUST храниться в IndexedDB как full manifest snapshots с documentId, target path и updatedAt.
+
+[Common] Стартовая страница MUST показывать recovery list для последних autosave snapshots и recent projects.
+
+[Common] Recent projects SHOULD храниться в IndexedDB registry при Save/Open. Builder не обязан сканировать working dir.
+
+[Common] Dirty state после последнего Save MUST защищаться browser beforeunload prompt.
+
+[Common] Autosave и Save feedback SHOULD отображаться toast-плашкой. Постоянный status bar для Save не требуется.
+
+## 8. Browser, runtime и сеть
+
+[Common] Builder authoring официально поддерживает Edge/Chrome на desktop Windows.
+
+[Common] Generated interactive HTML для студентов официально поддерживает Edge/Chrome. На других браузерах reading может работать, но интерактивные File API, Monaco и Pyodide не гарантируются.
+
+[Common] Student-facing HTML SHOULD открываться двойным кликом как file://. Smoke tests MUST проверять file:// mode.
+
+[Future Assessment] Если submission JSON handle API недоступен, assessment MUST показать blocked state с понятным требованием Edge/Chrome и supported open mode. Fallback export/import не входит в выбранный UX.
+
+[Common] Generated HTML не обязан работать офлайн. Разрешенные сетевые обращения:
+- собственные CSS/JS assets с GitHub Pages;
+- Monaco и Pyodide с официальных источников;
+- внешние media URLs;
+- iframe URLs, введенные Author.
+
+[Common] Telemetry и backend calls из generated HTML MUST отсутствовать.
+
+[Common] Если CDN/runtime/dependency не загрузились, generated HTML MUST оставить основной контент читаемым, показать graceful error/retry для affected code blocks и отключить Run/Debug.
+
+## 9. Runtime dependencies
+
+[Common] Собственные CSS/JS assets подключаются с GitHub Pages latest. На время разработки используются local assets через environment config.
+
+[Common] Monaco и Pyodide MUST использовать pinned versions из builder config. Эти версии MUST штамповаться в generated HTML metadata и loader configuration.
+
+[Common] Если pinned dependency недоступна, generated HTML MUST показать retry/error и не должен автоматически подменять версию на latest.
+
+[Common] Pyodide MUST запускаться в Web Worker. Run/Debug MUST иметь timeout/stop/restart capability.
+
+[Common] Timeout должен быть configurable. Жесткого product default не зафиксировано.
+
+[Common] Python state MUST быть fresh per run для каждого runnable block. Блоки не должны неявно делить namespace.
+
+[Common] Pyodide package allowlist задается per document.
+
+[Common] Обычный Python input() во время Run MUST работать через inline prompt queue в output area.
+
+## 10. UI, язык и визуальная система
+
+[Common] Builder UI по умолчанию SHOULD быть на английском, но все строки MUST быть вынесены в resources/constants для будущей локализации.
+
+[Common] Generated HTML default labels остаются русскими: "Оглавление", "Ваш ответ", "Ответ принят", "В ожидании ответа", "Верно", "Неверно" и аналогичные.
+
+[Common] Brand fields "Python Bootcamp" и copyright MUST иметь configurable defaults. Author MAY менять их на уровне документа или глобальных settings.
+
+[Common] Filename, documentTitle, browser title, top h1 и section/task titles MUST быть раздельными полями. documentTitle используется для browser title и top h1.
+
+[Common] Визуальное направление: course-branded учебный стиль, но builder должен оставаться рабочим инструментом без лишней декоративности.
+
+[Common] Light/dark theme generated HTML SHOULD храниться per browser. Состояние sidebar collapsed/expanded в generated HTML не сохраняется между refresh.
+
+[Common] Motion policy: анимации используются всегда. Separate reduced-motion behavior не является выбранным требованием.
+
+[Common] Статусы SHOULD кодироваться text+icon+color, чтобы цвет не был единственным сигналом.
+
+## 11. Future writing assistance
+
+[Future Writing Assistance] В будущем builder SHOULD поддержать Grammar Check для проверки правильности написания слов в редактируемом тексте.
+
+[Future Writing Assistance] Grammar Check MUST работать как authoring aid и не должен автоматически менять текст без явного действия Author.
+
+[Future Writing Assistance] Grammar Check SHOULD подсвечивать подозрительные слова или фрагменты и предлагать исправления через inline UI, context menu или отдельную панель.
+
+[Future Writing Assistance] В будущем builder SHOULD поддержать AI autocomplete для предложения вариантов продолжения или формулировки текста.
+
+[Future Writing Assistance] AI autocomplete MUST работать только в authoring builder UI. Generated student HTML не должен зависеть от AI service.
+
+[Future Writing Assistance] AI autocomplete MUST вставлять текст только после явного принятия предложения Author-ом.
+
+[Future Writing Assistance] Grammar Check и AI autocomplete SHOULD быть совместимы с Typed AST rich text model. Принятые исправления и предложения должны попадать в document store как обычные text edit commands и участвовать в undo/redo.
+
+[Future Writing Assistance] Эти функции не входят в V1 Theory acceptance, но architecture и rich text editor SHOULD не блокировать их добавление.
+
+## 12. Accessibility baseline
+
+[Common] Builder имеет desktop mouse+keyboard-first модель. Basic focus states, labels и hotkeys для основных команд SHOULD быть реализованы.
+
+[Common] Полный keyboard-only authoring, touch support и WCAG acceptance не входят в обязательный baseline.
+
+[Common] Generated HTML ориентирован на visual student experience. Отдельный WCAG target не выбран, но semantic headings/buttons SHOULD использоваться там, где это не конфликтует с UX.
+
+## 13. Security and trust model
+
+[Common] Author считается fully trusted.
+
+[Common] Builder MAY разрешать arbitrary links и arbitrary iframe URLs. Link URL и iframe URL не обязаны проходить allowlist.
+
+[Common] Generated HTML не должен добавлять CSP.
+
+[Common] Answer-key JSON хранится как plain JSON. Защита ключей достигается тем, что Author не передает answer-key студентам.
+
+[Common] Client-side code и browser state не считаются trusted для assessment grading. Правильные ответы assessment не должны попадать в student-facing HTML.
+
+## 14. Основные риски и tradeoffs
+
+[Common] GitHub Pages latest для собственного runtime ускоряет исправления, но создает риск изменения поведения старых HTML. Обязательная компенсация: backward-compatible runtime adapters.
+
+[Common] Trusted author model и arbitrary iframe/link URLs упрощают authoring, но student-facing безопасность зависит от добросовестности Author.
+
+[Common] Localhost browser вместо desktop WebView упрощает Blazor stack, но требует явной политики app working dir и ограничивает полноценные native file dialogs.
+
+[Common] Browser picker не является authority для сохранения внутри builder-а. Save/Open делает backend только внутри working dir.
+
+[Common] Assessment без server-side проверки не может надежно запретить студенту редактировать submission JSON. Verified grading должен считать JSON входными данными, а не защищенным хранилищем.
+
+[Common] Pyodide и Monaco тяжелые. Runtime и builder должны lazy-load/mount code editors и Python только по необходимости.
+
+[Future Writing Assistance] Grammar Check и AI autocomplete могут потребовать внешнего сервиса, локальной модели или сетевого API. До выбора реализации они не должны становиться обязательной зависимостью builder startup, save/open или generated HTML.
+
+[Future Writing Assistance] AI autocomplete несет риск неподходящих или фактически неверных формулировок. Author всегда остается ответственным за принятие и проверку предложенного текста.
+
+[Common] Generated HTML budget для одного файла без внешних media SHOULD быть до 2 MB.
+
+## 15. Acceptance и testing
+
+[V1 Theory] Готовность theory v1 принимается через golden sample lesson, который использует все block types и проверяется в builder и exported file:// HTML.
+
+[Common] Automated tests SHOULD включать:
+- golden snapshots для generated HTML, manifest, answer-key JSON и submission JSON;
+- unit tests для schema, validation, commands, migrations и renderer;
+- browser E2E для create, add, reorder, delete, rich text, Monaco Run, save/open и exported file:// preview;
+- Pyodide integration tests в реальном browser worker с timeout;
+- validation tests для strict relative paths, metadata schema и key/submission matching.
+
+[Future Writing Assistance] Будущие tests SHOULD покрывать Grammar Check highlights, принятие/отклонение исправлений, AI autocomplete suggestions, undo/redo после accepted suggestion и отсутствие AI dependency в generated student HTML.
+
+[Common] Release/Pages publish MUST блокироваться build+unit+browser quality gate: dotnet build/test, TypeScript build, CSS build, golden snapshots и ключевые Playwright tests.

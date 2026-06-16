@@ -1,0 +1,206 @@
+# PbHtmlBuilder practice.html vision, 2026-06-16
+
+## 1. Status and role
+
+[Future Practice] practice.html is a future generated artifact. It is not required for V1 Theory implementation, but its requirements are fixed here to guide architecture.
+
+[Future Practice] Practice pages are for student exercises with optional runnable/debuggable Python tasks.
+
+[Future Practice] practice.html MUST NOT persist student progress between sessions. Refresh resets code edits, output and statuses.
+
+## 2. Student-facing layout
+
+[Future Practice] practice.html MUST consist of:
+- top bar;
+- sidebar;
+- main task area.
+
+[Future Practice] Top bar MUST contain:
+- sidebar show/hide button;
+- topic heading area with topic-kicker default "Python Bootcamp";
+- h1 documentTitle;
+- topbar-tasks buttons;
+- light/dark theme button.
+
+[Future Practice] topbar-tasks MUST contain one button per task/section. Clicking a task button shows the corresponding task in main area.
+
+[Future Practice] Practice navigation model MUST be single active task. The main area shows only the selected task.
+
+[Future Practice] Sidebar MUST contain:
+- title "Оглавление";
+- hide button;
+- list of task headings with display numbers;
+- status per task: "В ожидании проверки", "Верно", "Неверно";
+- footer copyright.
+
+[Future Practice] topbar task buttons MUST show status indicator in lower-right corner:
+- yellow for waiting;
+- green for correct;
+- red for incorrect.
+
+## 3. Task sections
+
+[Future Practice] Task section heading MUST contain:
+- display number "01";
+- h2 editable task title.
+
+[Future Practice] Task body MAY contain:
+- paragraph;
+- ordered list;
+- unordered list;
+- simple table;
+- embedded image URL;
+- embedded video/iframe URL;
+- special block;
+- Monaco code block.
+
+[Future Practice] Practice sections SHOULD not contain question blocks.
+
+## 4. Special blocks
+
+[Future Practice] Special blocks MUST use the same template as theory special blocks:
+- block-label;
+- h3 title;
+- body.
+
+[Future Practice] Practice special block-label variants:
+- важный момент;
+- подсказка;
+- верный подход;
+- неверный подход.
+
+[Future Practice] Special body MAY contain paragraph, ordered list, unordered list, table, media and Monaco block. Nested special/question blocks are not allowed.
+
+## 5. Monaco and debug controls
+
+[Future Practice] Monaco block MUST contain:
+- editable title;
+- actions reset, run, copy, debug;
+- code editor;
+- optional output area when run is active.
+
+[Future Practice] Builder hover controls over code area MUST show:
+- run;
+- readonly;
+- debug.
+
+[Future Practice] Run default inactive. Readonly default active.
+
+[Future Practice] If debug is activated, run MUST automatically become active.
+
+[Future Practice] At most one Monaco block per section MAY have debug active.
+
+[Future Practice] Debug button MUST be disabled/unavailable if another block in the same section already has debug active.
+
+[Future Practice] Final generated HTML code actions MUST be ordered:
+- reset when readonly is inactive;
+- run when run active;
+- copy;
+- debug when debug active.
+
+## 6. Autotests
+
+[Future Practice] When debug is active in builder, an autotest editor area MUST appear below output.
+
+[Future Practice] Autotest editor MUST have a wide dashed add button with plus icon.
+
+[Future Practice] Add menu MUST offer:
+- input/print;
+- function;
+- class.
+
+[Future Practice] input/print test MUST have two fields:
+- stdin input;
+- expected output.
+
+[Future Practice] Multiple stdin lines MAY be entered with \n.
+
+[Future Practice] input/print comparison MUST be raw exact. No whitespace trimming, case normalization or regex matching is selected.
+
+[Future Practice] function test MUST be stored as structured data, not raw Python expression:
+- functionName;
+- args JSON;
+- expected JSON;
+- compareMode if needed later.
+
+[Future Practice] UI MAY display a human-readable expression, but persisted key should stay structured.
+
+[Future Practice] class/scenario test MUST be a Monaco Python test script using assert. No exception means pass; assertion failure or exception means fail.
+
+[Future Practice] Every autotest type MUST support Hidden checkbox.
+
+[Future Practice] Hidden in practice is UI-hidden only. Tests remain stored openly in practice.html and MUST NOT be treated as secure.
+
+[Future Practice] Autotests MUST have visible numbering in builder.
+
+[Future Practice] Practice autotests are stored in open form inside practice.html manifest.
+
+## 7. Runtime behavior
+
+[Future Practice] Debug MUST run tests through the same Pyodide Worker architecture as ordinary Run.
+
+[Future Practice] Python state MUST be fresh per run/debug attempt.
+
+[Future Practice] Package allowlist is per document.
+
+[Future Practice] Timeout/stop/restart capability is required.
+
+[Future Practice] If CDN/runtime is unavailable, task text remains readable and Run/Debug controls show graceful error/disabled state.
+
+## 8. Persistence and status
+
+[Future Practice] No persistence is selected. practice.html MUST reset code, output and check status after refresh.
+
+[Future Practice] While page is open, debug result MAY update sidebar and topbar status:
+- waiting;
+- correct;
+- incorrect.
+
+[Future Practice] A section with debug-enabled Monaco MUST color its border according to test result.
+
+[Future Practice] Since progress is not persisted, statuses are session-local only.
+
+## 9. Builder behavior
+
+[Future Practice] Builder mechanics SHOULD match theory where applicable:
+- documentTitle updates browser tab title;
+- empty document shows plus button;
+- section add/delete/reorder through sidebar and section handles;
+- insertion rail before/after blocks;
+- right-click custom context menu;
+- delete via trash icon;
+- drag through dedicated handles;
+- block duplicate and internal copy/paste;
+- command-level undo/redo;
+- autosave full manifest snapshots;
+- save/open through Project context menu.
+
+[Future Practice] Practice insertion menus MUST offer paragraph, ordered list, unordered list, table, image, video, special block and Monaco code block.
+
+[Future Practice] Rich text formatting rules match theory for paragraph/list/table text.
+
+[Future Practice] Monaco title and special h3 support inline code formatting.
+
+[Future Writing Assistance] Practice builder text surfaces SHOULD be compatible with future Grammar Check and AI autocomplete for Author-written task text, special block text and instructional content.
+
+[Future Writing Assistance] Grammar Check and AI autocomplete MUST NOT affect student runtime state, debug results or generated practice behavior unless Author accepts a text change before Save.
+
+## 10. Generated HTML constraints
+
+[Future Practice] practice.html MUST contain static DOM plus compact manifest.
+
+[Future Practice] practice.html MUST be lightweight and SHOULD remain under 2 MB without external media.
+
+[Future Practice] practice.html MUST open by double-click as file:// in Edge/Chrome for official interactive support.
+
+[Future Practice] Student-facing labels default to Russian.
+
+## 11. Tests
+
+[Future Practice] Future tests SHOULD include:
+- generated practice snapshot with open autotests;
+- browser test for single active task navigation;
+- debug passing/failing examples;
+- hidden test UI behavior;
+- refresh reset behavior;
+- file:// smoke test.

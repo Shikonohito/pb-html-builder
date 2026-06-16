@@ -1,0 +1,339 @@
+# PbHtmlBuilder theory.html vision, 2026-06-16
+
+## 1. Status and acceptance
+
+[V1 Theory] theory.html является главным обязательным результатом первой версии.
+
+[V1 Theory] V1 MUST реализовать полный author+student flow:
+- создать theory document;
+- редактировать все поддерживаемые блоки;
+- сохранить HTML;
+- открыть HTML обратно в builder;
+- использовать undo/redo;
+- восстановиться из autosave;
+- открыть exported theory.html как file://;
+- читать материал;
+- запускать runnable code blocks;
+- отвечать на theory questions.
+
+[V1 Theory] Acceptance MUST выполняться через golden sample lesson, который использует все block types.
+
+## 2. Student-facing layout
+
+[V1 Theory] theory.html MUST состоять из:
+- top bar;
+- sidebar;
+- main content.
+
+[V1 Theory] Top bar MUST содержать:
+- кнопку показать/скрыть sidebar;
+- topic heading area;
+- topic-kicker с default text "Python Bootcamp";
+- h1 с documentTitle;
+- кнопку light/dark theme.
+
+[V1 Theory] Topic-kicker и copyright MUST иметь configurable defaults.
+
+[V1 Theory] Sidebar MUST содержать:
+- заголовок "Оглавление";
+- кнопку скрытия sidebar;
+- список sections с display numbers и section titles;
+- footer copyright default "© Ivan Ivanov, 2026".
+
+[V1 Theory] Main content MUST содержать:
+- section map;
+- lesson sections.
+
+[V1 Theory] Active sidebar item SHOULD обновляться через scroll observer. Sidebar collapsed state не сохраняется между refresh.
+
+[V1 Theory] Anchors MUST использовать stable section IDs, а не title slug и не display number.
+
+## 3. Section map
+
+[V1 Theory] Section map MUST быть fixed 2x3 grid из шести cells.
+
+[V1 Theory] Левая часть section map MUST содержать text labels "Разделы темы" и "Что важно рассмотреть" как default generated HTML labels.
+
+[V1 Theory] Правая часть MUST содержать grid cells с редактируемыми titles и anchors.
+
+[V1 Theory] Builder MUST позволять выбрать anchor для map cell из списка текущих section headings. Список должен поддерживать поиск по заголовкам.
+
+[V1 Theory] Если привязанная section удалена, anchor in map cell MUST быть сброшен или помечен invalid до выбора нового anchor.
+
+[V1 Theory] Количество map cells не изменяется Author-ом в V1.
+
+## 4. Sections
+
+[V1 Theory] Lesson состоит из sections.
+
+[V1 Theory] Section heading MUST содержать:
+- display number в формате "01";
+- h2 section title.
+
+[V1 Theory] Display number MUST вычисляться из текущего порядка sections.
+
+[V1 Theory] Section title MUST редактироваться в builder-е и автоматически обновлять sidebar item.
+
+[V1 Theory] Section body MAY содержать:
+- paragraph;
+- ordered list;
+- unordered list;
+- simple table;
+- embedded image URL;
+- embedded video/iframe URL;
+- special block;
+- Monaco code block;
+- question block.
+
+[V1 Theory] Если sections нет, main content builder-а MUST показывать circular plus button для создания первой section.
+
+## 5. Block nesting
+
+[V1 Theory] Content nesting MUST быть one-level.
+
+[V1 Theory] Section может содержать special block и question block.
+
+[V1 Theory] Body special/question block MAY содержать text/list/table/media/Monaco blocks, но MUST NOT содержать nested special/question blocks.
+
+[V1 Theory] Flat-only модель не выбрана; recursive blocks не выбраны.
+
+## 6. Rich text
+
+[V1 Theory] Paragraphs, list items, table cells, answer options и feedback MUST хранить rich text как Typed AST.
+
+[V1 Theory] Rich text MUST поддерживать:
+- plain text;
+- bold;
+- italic;
+- underline;
+- inline code;
+- links.
+
+[V1 Theory] Heading text для Monaco title, special h3 и question h3 MUST поддерживать plain text и inline code.
+
+[V1 Theory] Rich text editor MUST быть custom limited editor. Raw contenteditable HTML не является source of truth.
+
+[V1 Theory] External paste into rich text MUST вставляться как plain text by default.
+
+[Future Writing Assistance] Theory builder rich text surfaces SHOULD be compatible with future Grammar Check for spelling validation and AI autocomplete for author text suggestions.
+
+[Future Writing Assistance] Grammar Check and AI autocomplete suggestions MUST be transient authoring UI until Author accepts a change. Accepted changes become normal rich text edit commands.
+
+[V1 Theory] Formatting toolbar MUST появляться над выделением и содержать commands:
+- bold;
+- italic;
+- underline;
+- inline code;
+- link.
+
+[V1 Theory] Right-click on selection MUST показывать context menu с теми же actions. Active mark SHOULD отображаться pressed state и check mark.
+
+[V1 Theory] Hotkeys:
+- Ctrl+B bold;
+- Ctrl+I italic;
+- Ctrl+U underline;
+- Ctrl+Q inline code;
+- Ctrl+K link.
+
+[V1 Theory] Если курсор стоит на слове без выделения, formatting hotkey SHOULD применяться к слову.
+
+## 7. Tables
+
+[V1 Theory] Table model MUST быть simple table:
+- optional header row;
+- add/remove rows;
+- add/remove columns;
+- rich text in cells;
+- no merged cells;
+- no sort;
+- no formulas.
+
+## 8. Media
+
+[V1 Theory] Embedded images and videos MUST use external URLs.
+
+[V1 Theory] Author является trusted, поэтому arbitrary iframe/video URLs allowed.
+
+[V1 Theory] При добавлении image/video builder MUST показать input для URL:
+- Esc cancels;
+- Enter inserts media at target location.
+
+[V1 Theory] Builder не обязан скачивать, копировать или встраивать media into HTML.
+
+## 9. Special blocks
+
+[V1 Theory] Special block MUST иметь:
+- block-label;
+- h3 title;
+- body.
+
+[V1 Theory] block-label variants:
+- определение термина;
+- важный момент;
+- подсказка;
+- верный подход;
+- неверный подход.
+
+[V1 Theory] Нажатие на block-label в builder-е MUST открыть dropdown variants. Выбор variant MUST изменить style.
+
+[V1 Theory] Special block body MAY contain:
+- paragraph;
+- ordered list;
+- unordered list;
+- simple table;
+- embedded image;
+- embedded video/iframe;
+- Monaco code block.
+
+[V1 Theory] Если special body пустое, builder MUST показать circular plus button для добавления body block.
+
+## 10. Monaco code blocks
+
+[V1 Theory] Monaco block MUST состоять из:
+- editable title;
+- actions;
+- code editor;
+- optional output area when run is active.
+
+[V1 Theory] Builder hover controls over code area MUST показывать buttons:
+- run with play icon;
+- readonly with lock icon.
+
+[V1 Theory] Run button default inactive. Readonly default active.
+
+[V1 Theory] Active control visually uses opaque solid border. Inactive control visually uses transparent/dashed border.
+
+[V1 Theory] Final generated HTML Monaco actions MUST be ordered:
+- reset, shown only when readonly is inactive;
+- run, shown only when run is active;
+- copy.
+
+[V1 Theory] Code typed in builder Monaco editor is default code. Generated HTML reset MUST restore that default code.
+
+[V1 Theory] Builder SHOULD mount Monaco only for visible/active code blocks and use lightweight preview for others.
+
+[V1 Theory] Runtime MUST lazy-load Monaco on demand.
+
+## 11. Python Run behavior
+
+[V1 Theory] Python code MUST run through Pyodide in Web Worker.
+
+[V1 Theory] Each Run MUST use fresh Python namespace.
+
+[V1 Theory] Pyodide package allowlist is per document.
+
+[V1 Theory] Timeout is configurable. Worker MUST support stop/restart.
+
+[V1 Theory] input() during Run MUST show inline prompt queue in output area and continue after student input.
+
+[V1 Theory] If Pyodide/Monaco/runtime fails to load, content remains readable and code block shows graceful error/retry.
+
+## 12. Question blocks
+
+[V1 Theory] Question block MUST have:
+- block-label;
+- h3 title;
+- body;
+- answer area.
+
+[V1 Theory] block-label variants:
+- вопрос с одним ответом;
+- вопрос с несколькими ответами;
+- открытый вопрос.
+
+[V1 Theory] Builder label dropdown options SHOULD include Single-Multiple Answer and Text Input Answer.
+
+[V1 Theory] For Single-Multiple Answer:
+- default options count is 4;
+- options contain rich text with plain, bold, underline and inline code;
+- each option has correct/incorrect toggle visible on hover in builder;
+- correct option visual tint is green; incorrect tint is red in builder edit mode;
+- more than one correct option changes label to "Вопрос с несколькими ответами";
+- each option MAY have feedback block;
+- option can be deleted by right-click context menu trash command;
+- plus button after last option adds an option.
+
+[V1 Theory] For Text Input Answer:
+- answer area contains label "Ваш ответ";
+- input field;
+- "Ответить" button;
+- feedback for correct/incorrect result;
+- answer variants list in builder;
+- plus button adds correct answer variant;
+- right-click on correct answer variant allows delete.
+
+[V1 Theory] Theory text-input answer comparison MUST be raw exact against one of configured correct answers.
+
+[V1 Theory] Theory quiz attempts MUST be retryable. Student may change selection/answer and feedback updates. Nothing persists between refresh.
+
+[V1 Theory] Feedback MUST use rich text AST.
+
+## 13. Builder insertion and deletion
+
+[V1 Theory] Empty section body MUST show circular plus button.
+
+[V1 Theory] Hovering before/after sections and blocks MUST show insertion rail: horizontal dashed line with circular plus button.
+
+[V1 Theory] Insertion menu at section body level MUST offer:
+- paragraph;
+- ordered list;
+- unordered list;
+- table;
+- image;
+- video;
+- special block;
+- Monaco code block;
+- question block.
+
+[V1 Theory] Insertion menu inside special/question body MUST offer:
+- paragraph;
+- ordered list;
+- unordered list;
+- table;
+- image;
+- video;
+- Monaco code block.
+
+[V1 Theory] Right-click on section, sidebar item or content block MUST open custom context menu. Trash icon command deletes target.
+
+[V1 Theory] Delete confirmation is not required. Undo is the recovery path.
+
+## 14. Drag, reorder and duplicate
+
+[V1 Theory] Drag MUST start from dedicated handles, not arbitrary text/content area.
+
+[V1 Theory] Sections MUST be reorderable from main section handle and sidebar item handle.
+
+[V1 Theory] Blocks MUST be reorderable within their parent container.
+
+[V1 Theory] Drop target MUST be shown by insertion rail and/or dragged ghost without layout instability.
+
+[V1 Theory] Reordering sections MUST update sidebar order automatically.
+
+[V1 Theory] Duplicate MUST be supported for sections and blocks. Duplicated elements MUST receive new stable IDs.
+
+[V1 Theory] Internal copy/paste for sections and blocks SHOULD be supported inside builder with new IDs on paste.
+
+## 15. Save/open/autosave
+
+[V1 Theory] Changing h1/documentTitle in builder MUST update browser tab title.
+
+[V1 Theory] Save/Open MUST use project commands in builder custom context menu.
+
+[V1 Theory] Save writes generated theory HTML with static DOM and compact manifest.
+
+[V1 Theory] Open MUST validate metadata before loading. Invalid metadata blocks edit.
+
+[V1 Theory] Autosave every 5 minutes with 10 IndexedDB full manifest snapshot slots is required.
+
+[V1 Theory] Dirty state MUST trigger beforeunload prompt.
+
+## 16. Student UI behavior
+
+[V1 Theory] theory.html MUST NOT persist lesson state between sessions. On refresh, question answers, code edits and output reset unless browser naturally preserves form input before reload.
+
+[V1 Theory] Light/dark theme MAY persist per browser.
+
+[V1 Theory] Sidebar collapsed state MUST NOT persist.
+
+[V1 Theory] Generated HTML MUST be optimized for desktop/tablet. Phone reading may be acceptable but Monaco UX is not primary.

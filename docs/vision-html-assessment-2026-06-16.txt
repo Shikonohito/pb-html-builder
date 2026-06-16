@@ -1,0 +1,218 @@
+# PbHtmlBuilder assessment.html vision, 2026-06-16
+
+## 1. Status and role
+
+[Future Assessment] assessment.html is a future generated artifact. It is not required for V1 Theory implementation.
+
+[Future Assessment] assessment.html is for collecting student answers without exposing answer keys in the student-facing HTML.
+
+[Future Assessment] assessment.html MUST persist accepted answers between sessions and support transfer to another device through submission JSON.
+
+## 2. File model
+
+[Future Assessment] assessment uses separate files:
+- assessment HTML: student-facing tasks and manifest without correct answers;
+- answer-key JSON: teacher/Author sidecar with correct answers, tests and expected code;
+- submission JSON: student answers.
+
+[Future Assessment] Answer-key JSON MUST be created/updated by builder when assessment is saved.
+
+[Future Assessment] Submission JSON MUST be created by student-facing assessment.html at first accepted answer through selected/created JSON handle.
+
+[Future Assessment] assessment.html MUST NOT contain correct answers or grading keys.
+
+[Future Assessment] answer-key JSON is plain JSON. It is protected by process control: Author does not give it to Student.
+
+[Future Assessment] submission JSON MUST NOT contain student identity fields. Student identification is out of app scope and may be handled by filename or transfer process.
+
+[Future Assessment] Default submission filename SHOULD use fixed suffix, for example lesson.assessment.submission.json.
+
+## 3. Student-facing layout
+
+[Future Assessment] assessment.html MUST consist of:
+- top bar;
+- sidebar;
+- main task area.
+
+[Future Assessment] Top bar MUST contain:
+- sidebar show/hide button;
+- topic-kicker default "Python Bootcamp";
+- h1 documentTitle;
+- light/dark theme button.
+
+[Future Assessment] Sidebar MUST contain:
+- title "Оглавление";
+- hide button;
+- list of sections/tasks with display numbers and titles;
+- neutral status per section: "В ожидании ответа" or "Ответ принят";
+- footer copyright.
+
+[Future Assessment] Main area MUST contain assessment sections.
+
+[Future Assessment] Normal assessment page MUST NOT show green/red correctness. It only shows neutral accepted status.
+
+## 4. Sections and gradable items
+
+[Future Assessment] Each assessment section MUST contain exactly one gradable item.
+
+[Future Assessment] A gradable item MAY be:
+- single-answer question;
+- multiple-answer question;
+- text-input answer;
+- code answer through Monaco block.
+
+[Future Assessment] Section MAY also contain instructional blocks before/around the gradable item:
+- paragraph;
+- ordered list;
+- unordered list;
+- simple table;
+- embedded image URL;
+- embedded video/iframe URL;
+- special block;
+- readonly/runnable Monaco explanation block where not gradable.
+
+[Future Assessment] Exactly one gradable item per section is required so sidebar status, answer-key matching and verified score stay section-based.
+
+## 5. Content blocks
+
+[Future Assessment] Paragraphs, lists, tables and media follow the same content model as theory.
+
+[Future Assessment] Special blocks use variants:
+- важный момент;
+- подсказка;
+- верный подход;
+- неверный подход.
+
+[Future Assessment] Special block body MAY contain paragraph, ordered list, unordered list, simple table, media and readonly/runnable Monaco block. Nested special/question blocks are not allowed.
+
+## 6. Monaco code answer
+
+[Future Assessment] Monaco code answer block MUST contain:
+- editable title in builder;
+- code editor;
+- reset/run/copy actions according to readonly/run flags;
+- output area when run is active;
+- "Ответить" action in generated assessment UI.
+
+[Future Assessment] When Student clicks "Ответить" on code answer:
+- current code is written to submission JSON;
+- section status becomes "Ответ принят";
+- accepted marker appears near block title;
+- sidebar item updates to "Ответ принят".
+
+[Future Assessment] Student MAY revise accepted answer. Submission stores the latest accepted version.
+
+[Future Assessment] Code answer validation is not performed in assessment.html because keys are not present.
+
+## 7. Assessment questions
+
+[Future Assessment] Question block MUST have:
+- block-label;
+- h3 title;
+- body;
+- answer area.
+
+[Future Assessment] Question variants:
+- вопрос с одним ответом;
+- вопрос с несколькими ответами;
+- открытый вопрос.
+
+[Future Assessment] Single/multiple choice options contain rich text with plain, bold, underline and inline code.
+
+[Future Assessment] Multiple-choice selection in assessment MUST accept on toggle. Every click/toggle updates submission immediately.
+
+[Future Assessment] Since answer-key is absent, assessment.html MUST NOT show correctness feedback.
+
+[Future Assessment] Text input answer area MUST contain:
+- label "Ваш ответ";
+- input;
+- "Ответить" button;
+- accepted feedback "Ответ принят" after submit.
+
+[Future Assessment] Text input answer MAY be revised. Latest accepted answer is stored in submission.
+
+## 8. Answer-key contents
+
+[Future Assessment] answer-key JSON MUST include:
+- documentId;
+- schemaVersion;
+- source assessment type/version metadata;
+- section/item IDs;
+- correct option IDs for choice questions;
+- exact accepted strings for text-input questions;
+- code autotests;
+- expected code;
+- expected code visibility flag for verified reports.
+
+[Future Assessment] Text-input grading in verified MUST use raw exact comparison.
+
+[Future Assessment] Multiple-answer grading in verified MUST use exact set comparison of selected option IDs vs correct option IDs.
+
+[Future Assessment] Code tests in key MUST support:
+- input/print with raw exact output comparison;
+- structured function call tests;
+- assert-based class/scenario tests.
+
+## 9. Submission JSON contents
+
+[Future Assessment] submission JSON MUST include:
+- documentId;
+- schemaVersion;
+- source assessment metadata;
+- answer records by stable item/section IDs;
+- latest accepted answer values;
+- timestamps if implementation needs them for diagnostics, but no required audit identity.
+
+[Future Assessment] Student profile/name/group/id fields are not required and should not be part of the selected UX.
+
+[Future Assessment] submission JSON is not trusted for security. verified builder validates IDs/schema and computes results.
+
+## 10. Student file handle behavior
+
+[Future Assessment] On first accepted answer, assessment.html MUST ask Student to choose/create submission JSON handle.
+
+[Future Assessment] If File System Access API or required handle behavior is unavailable, page MUST show blocked state for interactive assessment. Manual export/import fallback is not selected.
+
+[Future Assessment] assessment.html SHOULD open by double-click file:// in Edge/Chrome where handle behavior is supported.
+
+## 11. Builder behavior
+
+[Future Assessment] Builder mechanics SHOULD match theory where applicable:
+- section add/delete/reorder from main area and sidebar;
+- insertion rail;
+- right-click context menu;
+- dedicated drag handles;
+- rich text toolbar;
+- command-level undo/redo;
+- autosave;
+- Save/Open via Project context menu;
+- metadata validation before open.
+
+[Future Assessment] Builder MUST prevent or flag assessment sections that do not have exactly one gradable item.
+
+[Future Assessment] When run is active for a gradable code block, builder MUST show autotest editor and expected code editor for answer-key generation.
+
+[Future Assessment] At most one runnable gradable code block per section is allowed.
+
+[Future Writing Assistance] Assessment builder text surfaces SHOULD be compatible with future Grammar Check and AI autocomplete for Author-written prompts, instructions, options and feedback-like labels.
+
+[Future Writing Assistance] Grammar Check and AI autocomplete MUST NOT generate, expose or modify answer-key data unless Author explicitly accepts text changes in ordinary editable fields.
+
+## 12. Verified compatibility
+
+[Future Assessment] assessment HTML, answer-key JSON and submission JSON MUST be matchable by documentId and stable IDs.
+
+[Future Assessment] If answer-key or submission does not match assessment, verified builder MUST block with validation report.
+
+[Future Assessment] Missing submission items are not correct. In verified they become pending-review state unless manually overridden.
+
+## 13. Tests
+
+[Future Assessment] Future tests SHOULD include:
+- generated assessment HTML without keys;
+- generated answer-key JSON snapshot;
+- submission JSON creation and update via browser;
+- toggle-accept multiple-choice flow;
+- text/code answer revision;
+- missing File API blocked state;
+- strict key/submission validation.

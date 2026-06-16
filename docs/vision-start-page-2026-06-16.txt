@@ -1,0 +1,151 @@
+# PbHtmlBuilder start page vision, 2026-06-16
+
+## 1. Purpose and scope
+
+[Common] Стартовая страница является входом в builder. Она должна позволять создать новый документ, открыть recovery snapshot и перейти к будущим типам документов без включения недоступной функциональности.
+
+[V1 Theory] В первой версии New Theory MUST быть активной и полностью рабочей.
+
+[Future Practice] New Practice SHOULD быть видимой, но disabled/coming soon до реализации practice builder.
+
+[Future Assessment] New Assessment SHOULD быть видимой, но disabled/coming soon до реализации assessment builder.
+
+[Future Verified] New Verified Assessment SHOULD быть видимой, но disabled/coming soon до реализации verified review builder.
+
+## 2. Layout
+
+[Common] На стартовой странице в центре MUST быть блок с кнопками:
+- New Theory.
+- New Practice.
+- New Assessment.
+- New Verified Assessment.
+
+[Common] Стартовая страница SHOULD также показывать recovery list с autosave snapshots и recent projects.
+
+[Common] Recovery list SHOULD быть компактной и не должна превращать start page в dashboard. Основной first-viewport signal остается блок New actions.
+
+## 3. Transition behavior
+
+[Common] При выборе New action текущий блок MUST плавно сдвигаться справа налево на блок создания соответствующего документа.
+
+[Common] При Cancel блок создания MUST плавно сдвигаться слева направо обратно к стартовому блоку.
+
+[Common] При Create SHOULD выполняться плавный круговой wave transition от кнопки Create к builder-странице соответствующего типа.
+
+[Common] Motion policy: анимации включены всегда.
+
+## 4. Create form
+
+[Common] Форма создания для New Theory, New Practice, New Assessment и New Verified Assessment MUST содержать:
+- relative folder path;
+- кнопку выбора папки;
+- filename field;
+- document title field;
+- Create button;
+- Cancel button.
+
+[Common] Folder path MUST быть relative path внутри app working dir.
+
+[Common] Filename MUST вводиться отдельно от relative folder path.
+
+[Common] Document title MUST использоваться для browser title и top h1 во время builder editing.
+
+[Common] Filename, documentTitle и section/task titles MUST быть независимыми значениями.
+
+[Future Verified] New Verified Assessment form MUST дополнительно требовать:
+- existing assessment HTML;
+- existing answer-key JSON;
+- existing submission JSON.
+
+[Future Verified] Входные файлы verified flow MUST валидироваться по documentId, schemaVersion compatibility и stable item IDs.
+
+## 5. Folder picker
+
+[Common] Кнопка выбора папки MUST открывать in-app folder picker внутри app working dir.
+
+[Common] Folder picker MUST получать список подпапок через backend API.
+
+[Common] Folder picker MUST позволять создать новую подпапку внутри working dir.
+
+[Common] Folder picker MUST NOT позволять выбрать путь вне working dir.
+
+[Common] Manual relative path validation MUST быть strict:
+- no absolute paths;
+- no "..";
+- no Windows reserved names;
+- no invalid filename characters;
+- no resolved path outside root.
+
+## 6. Create semantics
+
+[Common] Create MUST задавать target path, filename, document title и document type, но не обязан сразу писать файл на диск.
+
+[V1 Theory] Для New Theory Create MUST открыть Theory builder с unsaved document state и target metadata.
+
+[Common] Первый HTML-файл появляется при Save.
+
+[Future Assessment] Answer-key sidecar создается при Save assessment.
+
+[Future Assessment] Student submission sidecar создается student HTML при первом accepted answer.
+
+[Future Verified] New Verified Assessment MUST открывать review builder после проверки входных файлов. Direct generation without review не является выбранным flow.
+
+## 7. Collision and folders
+
+[Common] Если целевой HTML или sidecar JSON уже существует, builder MUST запросить confirm overwrite.
+
+[Common] Confirm overwrite SHOULD показывать:
+- тип артефакта;
+- relative path;
+- filename;
+- last modified time, если доступно.
+
+[Common] Если relative folder не существует, builder SHOULD создать недостающие подпапки после подтверждения Create/Save.
+
+[Common] Перед overwrite, migration или другим risky save builder SHOULD создать timestamped backup рядом с файлом.
+
+## 8. Recovery and recent projects
+
+[Common] Start page MUST показывать recovery list из IndexedDB autosave registry.
+
+[Common] Каждый autosave entry SHOULD показывать:
+- document type;
+- document title;
+- target path, если был установлен;
+- updatedAt;
+- dirty/unsaved indication;
+- documentId.
+
+[Common] Autosave matching MUST использовать documentId + target path.
+
+[Common] Recent projects SHOULD храниться в IndexedDB registry при Save/Open. Start page не обязана сканировать working dir.
+
+[Common] Recovery entry MUST открывать document snapshot в builder-е и сохранять dirty state до явного Save.
+
+## 9. Project commands
+
+[Common] Project commands Open, Save и Save as MUST быть доступны через custom context menu.
+
+[Common] По итоговому решению top menu или visible Save button не требуются. Context menu является основным entry point.
+
+[Common] Custom context menu SHOULD перехватывать right-click во всем builder app.
+
+[Common] Вне builder app generated HTML не обязан иметь такой же Project menu.
+
+[Common] Save и Autosave SHOULD показывать toast feedback. Постоянный status bar не является требованием.
+
+## 10. Open/import behavior
+
+[Common] Open existing project через context menu MUST принимать только HTML с валидными builder metadata.
+
+[Common] Если выбранный HTML находится вне app working dir, builder MUST import/copy его внутрь root перед редактированием.
+
+[Common] Invalid metadata MUST блокировать open с отчетом. Best-effort repair не выбран как default.
+
+## 11. Single-tab behavior
+
+[Common] Start page и builder MUST участвовать в soft lock mechanism через browser storage/BroadcastChannel.
+
+[Common] Если уже открыта активная вкладка, новая вкладка MUST показать warning/blocked screen.
+
+[Common] Если heartbeat старой вкладки устарел, новая вкладка MAY предложить takeover.
