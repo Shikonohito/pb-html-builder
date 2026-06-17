@@ -40,6 +40,13 @@ function Get-ScriptDirectory {
     return (Get-Location).Path
 }
 
+function Write-Status {
+    param([string]$Message)
+
+    [Console]::Out.WriteLine($Message)
+    [Console]::Out.Flush()
+}
+
 function Get-UrlPort {
     param([string]$Value)
 
@@ -170,6 +177,53 @@ function Test-ExpectedServerProcess {
     )
 }
 
+function Get-ShortCommandLine {
+    param(
+        [string]$CommandLine,
+        [int]$MaxLength = 180
+    )
+
+    if ([string]::IsNullOrWhiteSpace($CommandLine)) {
+        return $null
+    }
+
+    if ($CommandLine.Length -le $MaxLength) {
+        return $CommandLine
+    }
+
+    return "$($CommandLine.Substring(0, $MaxLength - 3))..."
+}
+
+function Get-TargetProcessDescription {
+    param(
+        [System.Diagnostics.Process]$Process,
+        [string[]]$Sources,
+        [string]$CommandLine,
+        [int]$Port
+    )
+
+    $roles = @($Sources | ForEach-Object {
+            switch -Wildcard ($_) {
+                'state:start' { 'launcher process saved as StartProcessId'; break }
+                'state' { 'saved server process from state file'; break }
+                'port:*' { "process listening on port $Port"; break }
+                default { "source: $_" }
+            }
+        })
+
+    $parts = @($Process.ProcessName)
+    if ($roles.Count -gt 0) {
+        $parts += ($roles -join '; ')
+    }
+
+    $shortCommandLine = Get-ShortCommandLine -CommandLine $CommandLine
+    if ($shortCommandLine) {
+        $parts += "command: $shortCommandLine"
+    }
+
+    return ($parts -join '; ')
+}
+
 function Add-TargetProcess {
     param(
         [hashtable]$Targets,
@@ -230,7 +284,7 @@ foreach ($processId in @(Get-ListeningProcessIds -Port $port)) {
 
 if ($targets.Count -eq 0) {
     Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
-    Write-Host "No local server process found for $Url."
+    Write-Status "No local server process found for $Url."
     exit 0
 }
 
@@ -254,9 +308,19 @@ foreach ($entry in $targets.GetEnumerator()) {
         continue
     }
 
-    Write-Host "Stopping PID $processId ($($sources -join ', '))..."
-    Stop-Process -Id $processId -Force -ErrorAction Stop
-    $stoppedAny = $true
+    $processDescription = Get-TargetProcessDescription -Process $process -Sources $sources -CommandLine $commandLine -Port $port
+    Write-Status "Stopping PID $processId - $processDescription..."
+    try {
+        Stop-Process -Id $processId -Force -ErrorAction Stop
+        $stoppedAny = $true
+    }
+    catch {
+        if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
+            throw
+        }
+
+        continue
+    }
 
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $deadline) {
@@ -275,12 +339,12 @@ foreach ($entry in $targets.GetEnumerator()) {
 Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
 
 if (-not $liveTargetFound) {
-    Write-Host "No local server process found for $Url."
+    Write-Status "No local server process found for $Url."
     exit 0
 }
 
 if ($stoppedAny) {
-    Write-Host "Local server stopped for $Url."
+    Write-Status "Local server stopped for $Url."
     exit 0
 }
 

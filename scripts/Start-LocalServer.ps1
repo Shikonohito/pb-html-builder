@@ -55,6 +55,19 @@ function Get-ScriptDirectory {
     return (Get-Location).Path
 }
 
+function Write-Status {
+    param([string]$Message)
+
+    [Console]::Out.WriteLine($Message)
+    [Console]::Out.Flush()
+}
+
+function ConvertTo-CmdArgument {
+    param([string]$Value)
+
+    return '"' + ($Value -replace '"', '\"') + '"'
+}
+
 function Get-UrlPort {
     param([string]$Value)
 
@@ -154,7 +167,7 @@ function Open-LocalBrowser {
     }
     catch {
         Write-Warning "Local server is ready, but the browser could not be opened automatically: $($_.Exception.Message)"
-        Write-Host "Open this URL manually: $Value"
+        Write-Status "Open this URL manually: $Value"
     }
 }
 
@@ -229,6 +242,7 @@ $port = Get-UrlPort -Value $Url
 $tempDirectory = Join-Path $repoRoot 'temp'
 $logsDirectory = Join-Path $repoRoot 'logs'
 $stateFile = Join-Path $tempDirectory "local-server-$port.json"
+$runnerFile = Join-Path $tempDirectory "local-server-$port.cmd"
 $stdoutLog = Join-Path $logsDirectory "pb-html-$port.out.log"
 $stderrLog = Join-Path $logsDirectory "pb-html-$port.err.log"
 
@@ -253,7 +267,7 @@ if (Test-HttpReady -Value $Url) {
         $portProcessIds = @()
     }
     else {
-        Write-Host "Local server is already ready: $Url"
+        Write-Status "Local server is already ready: $Url"
 
         if ($expectedProcessIds.Count -gt 0) {
             $stateObject = @{
@@ -266,11 +280,11 @@ if (Test-HttpReady -Value $Url) {
                 StderrLog = $stderrLog
             }
             Write-StateFile -Path $stateFile -State $stateObject
-            Write-Host "PID: $($expectedProcessIds[0])"
+            Write-Status "PID: $($expectedProcessIds[0])"
         }
 
         if (Test-Path $stateFile) {
-            Write-Host "State file: $stateFile"
+            Write-Status "State file: $stateFile"
         }
 
         if ($LaunchBrowser) {
@@ -338,17 +352,25 @@ $dotnetArguments += @(
     '--LocalApp:LaunchBrowser=false'
 )
 
-Write-Host "Starting local server..."
-Write-Host "Project: $projectFullPath"
-Write-Host "URL: $Url"
-Write-Host "Logs: $stdoutLog"
+Write-Status "Starting local server..."
+Write-Status "Project: $projectFullPath"
+Write-Status "URL: $Url"
+Write-Status "Logs: $stdoutLog"
+
+$dotnetCommand = @((ConvertTo-CmdArgument -Value 'dotnet')) +
+    @($dotnetArguments | ForEach-Object { ConvertTo-CmdArgument -Value $_ }) +
+    @('>', (ConvertTo-CmdArgument -Value $stdoutLog), '2>', (ConvertTo-CmdArgument -Value $stderrLog))
+
+Set-Content -LiteralPath $runnerFile -Encoding ASCII -Value @(
+    '@echo off',
+    "cd /d $(ConvertTo-CmdArgument -Value $projectDirectory)",
+    ($dotnetCommand -join ' ')
+)
 
 $process = Start-Process `
-    -FilePath 'dotnet' `
-    -ArgumentList $dotnetArguments `
+    -FilePath 'cmd.exe' `
+    -ArgumentList @('/d', '/c', 'call', $runnerFile) `
     -WorkingDirectory $projectDirectory `
-    -RedirectStandardOutput $stdoutLog `
-    -RedirectStandardError $stderrLog `
     -WindowStyle Hidden `
     -PassThru
 
@@ -382,9 +404,9 @@ while ((Get-Date) -lt $deadline) {
             Write-StateFile -Path $stateFile -State $stateObject
         }
 
-        Write-Host "Local server is ready: $Url"
-        Write-Host "PID: $serverProcessId"
-        Write-Host "State file: $stateFile"
+        Write-Status "Local server is ready: $Url"
+        Write-Status "PID: $serverProcessId"
+        Write-Status "State file: $stateFile"
         if ($LaunchBrowser) {
             Open-LocalBrowser -Value $Url
         }
