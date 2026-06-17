@@ -1,0 +1,4 @@
+interface:
+  display_name: "Start/Stop Server"
+  short_description: "Start and stop the local workspace server"
+  default_prompt: "Use $start-stop-server to start or stop the local server."
