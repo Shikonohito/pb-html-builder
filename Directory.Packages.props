@@ -2,4 +2,8 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.App.Internal.Assets" Version="10.0.8" />
+  </ItemGroup>
 </Project>

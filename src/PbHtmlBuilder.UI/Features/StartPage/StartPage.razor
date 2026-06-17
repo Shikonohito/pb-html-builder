@@ -1,4 +1,40 @@
 @page "/"
 
 <PageTitle>PbHtmlBuilder</PageTitle>
-<h1>PbHtmlBuilder</h1>
+<div class="start-page">
+    <h1 class="sr-only">PbHtmlBuilder</h1>
+
+    <section class="start-shell" aria-label="Start workspace">
+        <div class="start-slider @(_selectedAction is null ? "is-actions" : "is-create")">
+            <div class="start-slide" aria-hidden="@(_selectedAction is not null)">
+                <div class="start-panel">
+                    <NewActionPanel OnSelected="SelectAction" />
+                    <RecentProjectsList />
+                </div>
+            </div>
+
+            <div class="start-slide" aria-hidden="@(_selectedAction is null)">
+                <div class="start-panel">
+                    @if (_selectedAction is not null)
+                    {
+                        <CreateDocumentForm Action="_selectedAction" OnCancel="CancelCreate" />
+                    }
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private StartDocumentAction? _selectedAction;
+
+    private void SelectAction(StartDocumentAction action)
+    {
+        _selectedAction = action;
+    }
+
+    private void CancelCreate()
+    {
+        _selectedAction = null;
+    }
+}
