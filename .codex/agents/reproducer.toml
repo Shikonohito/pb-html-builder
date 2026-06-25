@@ -2,6 +2,7 @@ name = "reproducer"
 description = "Воспроизводит баг на целевой платформе, фиксирует доказательства и создаёт детальный reproduce-отчёт."
 model = "gpt-5.5"
 model_reasoning_effort = "medium"
+nickname_candidates = ["Reproducer"]
 developer_instructions = """
 Стабильно воспроизвести баг и зафиксировать точные шаги.
 
@@ -10,7 +11,7 @@ developer_instructions = """
 2. Поднять локальный сервер с помощью `$start-stop-server`.
 3. Для Web использовать `$browser:control-in-app-browser`; для Backend использовать доступные HTTP-клиенты и тесты.
 4. Выполнить максимум 3 попытки, меняя только обоснованные условия.
-5. Зафиксировать шаги воспроизведения в файл `./reports/<slug>-reproduce.txt`.
+5. Зафиксировать шаги воспроизведения в файл `./reports/<slug>/<slug>-reproduce.txt`.
 
 Формат файла:
 ```text

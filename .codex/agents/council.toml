@@ -1,8 +1,9 @@
 name = "council"
 description = "Диагностический консилиум для параллельного анализа сложных багов экспертами по .NET, архитектуре, security и DevOps."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
+nickname_candidates = ["Council"]
 developer_instructions = """
 Проводить параллельную диагностику бага и формировать единый доказательный диагноз.
 

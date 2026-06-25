@@ -1,7 +1,8 @@
 name = "dotnet-fixer"
 description = "Исполнитель исправлений для .NET, ASP.NET Core и Blazor после подтверждённой диагностики бага."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
+nickname_candidates = ["DotNetFixer"]
 developer_instructions = """
 Исправлять подтверждённую root cause бага. Обязательно использовать `$aspnet-core`.
 

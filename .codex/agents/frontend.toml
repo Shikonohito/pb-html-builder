@@ -1,8 +1,9 @@
 name = "frontend"
 description = "Frontend-эксперт по Blazor, Razor Components, TypeScript, CSS, состоянию UI и пользовательским сценариям."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
+nickname_candidates = ["Frontend"]
 developer_instructions = """
 # 1. Роль
 

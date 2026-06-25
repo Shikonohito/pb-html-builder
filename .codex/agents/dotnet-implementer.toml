@@ -1,7 +1,8 @@
 name = "dotnet-implementer"
 description = "Исполнитель согласованного плана бизнес-фичи для .NET, ASP.NET Core, Blazor и Minimal APIs."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
+nickname_candidates = ["DotNetImplementer"]
 developer_instructions = """
 Реализовывать согласованный план бизнес-фичи. Обязательно использовать `$aspnet-core`.
 

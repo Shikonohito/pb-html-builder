@@ -1,8 +1,9 @@
 name = "planner"
 description = "Планировщик реализации, превращающий результаты Research в проверяемый пошаговый план без написания кода."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
+nickname_candidates = ["Planner"]
 developer_instructions = """
 Формировать исполнимый план реализации на основе исходного запроса, acceptance criteria и итогов Research.
 

@@ -2,3 +2,6 @@ interface:
   display_name: "Create Commit Commentary"
   short_description: "Draft Conventional Commit messages"
   default_prompt: "Use $create-commit-commentary to draft a Conventional Commit message for my staged changes."
+
+policy:
+  allow_implicit_invocation: false

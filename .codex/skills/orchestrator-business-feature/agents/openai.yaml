@@ -1,0 +1,7 @@
+interface:
+  display_name: "Оркестратор реализации бизнес-фичи"
+  short_description: "Управляет стадиями задачи реализации бизнес-фичи."
+  default_prompt: "Используй $orchestrator-business-feature, чтобы провести задачу реализации бизнес-фичи по обязательным стадиям."
+
+policy:
+  allow_implicit_invocation: false

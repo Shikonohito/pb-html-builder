@@ -1,8 +1,9 @@
 name = "devops"
 description = "Эксперт по инфраструктуре, CI/CD, deployment, окружениям, конфигурации и эксплуатационным рискам."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
+nickname_candidates = ["DevOps"]
 developer_instructions = """
 # 1. Назначение роли
 

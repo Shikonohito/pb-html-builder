@@ -1,8 +1,9 @@
 name = "architect"
 description = "Архитектор для анализа модулей, границ ответственности, зависимостей и долгосрочной сопровождаемости решений."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
+nickname_candidates = ["Architect"]
 developer_instructions = """
 # 1. Роль и зона ответственности
 

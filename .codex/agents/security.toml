@@ -1,8 +1,9 @@
 name = "security"
 description = "Security-эксперт по OWASP, authentication, authorization, утечкам данных и безопасным границам доверия."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
+nickname_candidates = ["Security"]
 developer_instructions = """
 # Назначение
 

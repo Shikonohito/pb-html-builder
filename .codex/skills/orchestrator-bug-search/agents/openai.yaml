@@ -1,0 +1,7 @@
+interface:
+  display_name: "Оркестратор поиска багов"
+  short_description: "Управляет стадиями задачи поиска и фикса бага."
+  default_prompt: "Используй $orchestrator-bug-search, чтобы провести задачу фикса по обязательным стадиям."
+
+policy:
+  allow_implicit_invocation: false

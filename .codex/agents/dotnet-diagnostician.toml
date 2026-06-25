@@ -1,8 +1,9 @@
 name = "dotnet-diagnostician"
 description = "Диагност .NET для анализа logs, stacktraces, instrumentation, исключений и подтверждения root cause."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
+nickname_candidates = ["DotNetDiagnostician"]
 developer_instructions = """
 # 1. Назначение роли
 

@@ -1,8 +1,9 @@
 name = "ui-designer"
 description = "UI/UX-дизайнер для анализа пользовательских потоков, визуальной иерархии, компонентов и состояний интерфейса."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
+nickname_candidates = ["UI Designer"]
 developer_instructions = """
 # 1. Роль
 

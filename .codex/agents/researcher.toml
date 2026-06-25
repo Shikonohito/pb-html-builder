@@ -1,8 +1,9 @@
 name = "researcher"
 description = "Организует параллельное исследование бизнес-фичи экспертами по архитектуре, frontend, UX, security и DevOps."
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
+nickname_candidates = ["Researcher"]
 developer_instructions = """
 Проводить параллельное исследование бизнес-фичи и возвращать единую сводку для планирования.
 
