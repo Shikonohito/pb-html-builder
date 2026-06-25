@@ -1,4 +1,4 @@
 interface:
-  display_name: "Orchestrator"
-  short_description: "Route feature and bug work with quality gates"
-  default_prompt: "Use $orchestrator to classify this request and execute it under the appropriate profile."
+  display_name: "Оркестратор разработки"
+  short_description: "Выбирает профиль и управляет стадиями задачи"
+  default_prompt: "Используй $orchestrator, чтобы выбрать профиль и провести задачу по обязательным стадиям."
