@@ -5,19 +5,19 @@
     <h1 class="sr-only">PbHtmlBuilder</h1>
 
     <section class="start-shell" aria-label="Start workspace">
-        <div class="start-slider @(_selectedAction is null ? "is-actions" : "is-create")">
-            <div class="start-slide" aria-hidden="@(_selectedAction is not null)">
+        <div class="start-slider @(_isCreateVisible ? "is-create" : "is-actions")">
+            <div class="start-slide" aria-hidden="@_isCreateVisible" inert="@(_isCreateVisible ? string.Empty : null)">
                 <div class="start-panel">
                     <NewActionPanel OnSelected="SelectAction" />
                     <RecentProjectsList />
                 </div>
             </div>
 
-            <div class="start-slide" aria-hidden="@(_selectedAction is null)">
+            <div class="start-slide" aria-hidden="@(!_isCreateVisible)" inert="@(!_isCreateVisible ? string.Empty : null)">
                 <div class="start-panel">
-                    @if (_selectedAction is not null)
+                    @if (_mountedAction is { } mountedAction)
                     {
-                        <CreateDocumentForm Action="_selectedAction" OnCancel="CancelCreate" />
+                        <CreateDocumentForm Action="mountedAction" OnCancel="CancelCreate" />
                     }
                 </div>
             </div>
@@ -26,15 +26,29 @@
 </div>
 
 @code {
-    private StartDocumentAction? _selectedAction;
+    private static readonly TimeSpan StartSliderTransitionDuration = TimeSpan.FromMilliseconds(340);
+
+    private StartDocumentAction? _mountedAction;
+    private bool _isCreateVisible;
+    private int _transitionSession;
 
     private void SelectAction(StartDocumentAction action)
     {
-        _selectedAction = action;
+        _transitionSession++;
+        _mountedAction = action;
+        _isCreateVisible = true;
     }
 
-    private void CancelCreate()
+    private async Task CancelCreate()
     {
-        _selectedAction = null;
+        var session = ++_transitionSession;
+        _isCreateVisible = false;
+
+        await Task.Delay(StartSliderTransitionDuration);
+
+        if (session == _transitionSession && !_isCreateVisible)
+        {
+            _mountedAction = null;
+        }
     }
 }
