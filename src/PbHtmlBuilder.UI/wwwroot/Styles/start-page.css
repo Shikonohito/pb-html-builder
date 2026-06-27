@@ -24,10 +24,7 @@ body {
 }
 
 body {
-  background:
-    radial-gradient(circle at 18% 16%, rgba(76, 201, 240, 0.12), transparent 28%),
-    radial-gradient(circle at 84% 76%, rgba(255, 183, 3, 0.1), transparent 30%),
-    linear-gradient(135deg, #151820, var(--start-bg));
+  background: linear-gradient(135deg, #151820, var(--start-bg));
   color: var(--start-text);
 }
 
