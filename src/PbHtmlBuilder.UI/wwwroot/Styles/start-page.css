@@ -98,38 +98,52 @@ button {
 .new-action-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .new-action-button {
   --action-accent: #4cc9f0;
+  --action-tile-size: 156px;
   display: grid;
+  width: min(100%, 164px);
   min-width: 0;
-  min-height: 118px;
-  grid-template-rows: 34px minmax(0, 1fr);
+  min-height: var(--action-tile-size);
+  grid-template-rows: 48px minmax(34px, auto);
   align-items: center;
   justify-items: center;
+  justify-self: center;
+  align-content: center;
   gap: 12px;
   padding: 18px 12px;
-  border: 1px solid color-mix(in srgb, var(--action-accent) 48%, var(--start-line));
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--action-accent) 7%, var(--start-surface-strong));
-  color: var(--start-text);
+  border: 1px solid color-mix(in srgb, var(--action-accent) 34%, var(--start-line));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--start-surface-strong) 78%, var(--start-bg));
+  box-shadow:
+    0 0 18px -10px color-mix(in srgb, var(--action-accent) 72%, transparent),
+    0 12px 26px rgba(0, 0, 0, 0.22);
+  color: var(--action-accent);
   cursor: pointer;
   text-align: center;
   transition:
-    background 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    color 180ms ease,
+    filter 180ms ease,
+    transform 180ms ease;
 }
 
 .new-action-button:hover,
 .new-action-button:focus-visible {
-  border-color: var(--action-accent);
-  background: color-mix(in srgb, var(--action-accent) 16%, var(--start-surface-strong));
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--action-accent) 16%, transparent);
-  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--action-accent) 88%, white);
+  background: color-mix(in srgb, var(--start-surface-strong) 72%, var(--start-bg));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--action-accent) 14%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--action-accent) 82%, transparent),
+    0 18px 30px rgba(0, 0, 0, 0.3);
+  color: color-mix(in srgb, var(--action-accent) 92%, white);
+  filter: brightness(1.05);
+  transform: translateY(-4px);
 }
 
 .new-action-button:focus-visible,
@@ -152,6 +166,11 @@ input:focus-visible {
   color: var(--action-accent);
 }
 
+.new-action-icon {
+  width: 48px;
+  height: 48px;
+}
+
 .new-action-icon svg,
 .create-document-icon svg,
 .folder-picker-button svg {
@@ -159,9 +178,15 @@ input:focus-visible {
   height: 24px;
 }
 
+.new-action-icon svg {
+  width: 42px;
+  height: 42px;
+  stroke-width: 1.8;
+}
+
 .new-action-label {
   overflow-wrap: anywhere;
-  color: var(--start-text);
+  color: currentColor;
   font-size: 0.95rem;
   font-weight: 850;
   line-height: 1.22;
@@ -440,11 +465,8 @@ input:focus-visible {
   }
 
   .new-action-button {
-    min-height: 88px;
-    grid-template-columns: 34px minmax(0, 1fr);
-    grid-template-rows: auto;
-    justify-items: start;
-    text-align: left;
+    --action-tile-size: 148px;
+    width: min(100%, 164px);
   }
 
   .folder-picker-button {
