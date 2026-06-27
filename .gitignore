@@ -6,11 +6,12 @@ publish/
 out/
 *.binlog
 
-# Logs and local runtime state
+# Logs, reports and local runtime state
 *.log
 *.binlog
 logs/
 temp/
+reports/
 
 # IDE and editor state
 .vs/
