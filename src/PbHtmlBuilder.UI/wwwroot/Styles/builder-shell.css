@@ -45,9 +45,9 @@
   min-width: 0;
   grid-column: 1 / -1;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   min-height: var(--builder-header-height);
-  padding: 0 28px;
+  padding: 34px;
   border-bottom: 1px solid var(--builder-line);
   background: color-mix(in srgb, var(--builder-surface) 88%, transparent);
   backdrop-filter: blur(18px);
@@ -79,7 +79,7 @@
 
 .builder-topic-title h1 {
   overflow: hidden;
-  font-size: 1.75rem;
+  font-size: clamp(1.32rem, 2.4vw, 2.35rem);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -129,13 +129,13 @@
 
 .builder-icon-button:focus-visible,
 .builder-panel-button:focus-visible,
-.builder-outline-item:focus-visible {
+.builder-outline-item:focus-visible,
+.builder-section-map-grid button:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--builder-accent) 70%, transparent);
   outline-offset: 2px;
 }
 
-.builder-icon-button:disabled,
-.builder-section-map-grid button:disabled {
+.builder-icon-button:disabled {
   cursor: default;
   opacity: 0.66;
 }
@@ -184,6 +184,16 @@
   overflow: hidden auto;
 }
 
+.builder-sidebar-footer {
+  flex: 0 0 auto;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--builder-line);
+  color: var(--builder-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .builder-outline-item {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
@@ -221,50 +231,59 @@
 }
 
 .builder-main {
-  min-width: 0;
-  padding: 34px;
-}
-
-.builder-canvas {
-  max-width: 1120px;
-  margin-inline: auto;
-}
-
-.builder-canvas {
   display: grid;
+  align-content: start;
   gap: 22px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1250px;
+  min-width: 0;
+  margin-inline: auto;
+  padding: 56px;
 }
 
 .builder-section-map {
   display: grid;
   grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
-  gap: 26px;
+  gap: 28px;
   align-items: end;
-  padding-bottom: 28px;
+  padding-bottom: 30px;
   border-bottom: 1px solid var(--builder-line);
 }
 
 .builder-section-map h3 {
-  font-size: 1.55rem;
+  font-size: clamp(1.7rem, 3vw, 3.25rem);
 }
 
 .builder-section-map-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(56px, auto));
+  gap: 12px;
 }
 
 .builder-section-map-grid button {
   min-width: 0;
-  min-height: 54px;
-  padding: 12px;
-  border: 1px solid color-mix(in srgb, var(--builder-accent) 38%, var(--builder-line));
+  min-height: 56px;
+  padding: 16px;
+  border: 1px solid #3b414c;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--builder-accent) 8%, var(--builder-surface));
+  background: #191d24;
   color: var(--builder-text);
+  cursor: pointer;
   overflow-wrap: break-word;
   text-align: left;
   font-weight: 800;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.builder-section-map-grid button:hover {
+  border-color: var(--builder-accent);
+  background: color-mix(in srgb, var(--builder-accent) 16%, #191d24);
+  transform: translateY(-1px);
 }
 
 .builder-section-skeleton {
@@ -276,6 +295,10 @@
   border-radius: 8px;
   background: color-mix(in srgb, var(--builder-surface-strong) 94%, transparent);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+}
+
+.builder-section {
+  min-width: 0;
 }
 
 .builder-section-heading {
@@ -301,20 +324,12 @@
     grid-template-columns: 1fr;
     align-items: stretch;
   }
-
-  .builder-section-map-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 760px) {
   .builder-workspace,
   .builder-workspace.is-sidebar-collapsed {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .builder-topbar {
-    padding: 0 16px;
   }
 
   .builder-sidebar {
@@ -332,21 +347,9 @@
     transform: translateX(-100%);
   }
 
-  .builder-main {
-    padding: 24px 16px 42px;
-  }
-
 }
 
 @media (max-width: 560px) {
-  .builder-topic-title h1 {
-    font-size: 1.18rem;
-  }
-
-  .builder-section-map-grid {
-    grid-template-columns: 1fr;
-  }
-
   .builder-section-skeleton {
     padding: 18px;
   }

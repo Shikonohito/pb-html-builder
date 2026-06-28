@@ -1,11 +1,13 @@
 @page "/builder/theory"
 
 <BuilderWorkspaceShell DocumentKind="Theory"
-                       DocumentTitle="@Title"
+                       DocumentTitle="@ResolvedTitle"
                        Accent="#4cc9f0"
-                       OutlineLabel="Sections"
-                       MapTitle="Section map"
+                       OutlineLabel="Оглавление"
+                       MapLabel="Разделы темы"
+                       MapTitle="Что важно рассмотреть"
                        PrimarySectionTitle="Introduction"
+                       SidebarFooter="© Ivan Ivanov, 2026"
                        OutlineItems="OutlineItems"
                        CanvasItems="CanvasItems" />
 
@@ -17,12 +19,12 @@
 
     private static readonly string[] CanvasItems =
     [
-        "Definition",
-        "Important",
-        "Hint",
-        "Correct",
-        "Incorrect",
-        "Quiz"
+        "Заголовок",
+        "Заголовок",
+        "Заголовок",
+        "Заголовок",
+        "Заголовок",
+        "Заголовок"
     ];
 
     [SupplyParameterFromQuery(Name = "title")]
@@ -33,4 +35,8 @@
 
     [SupplyParameterFromQuery(Name = "fileName")]
     public string? FileName { get; set; }
+
+    private string ResolvedTitle => string.IsNullOrWhiteSpace(Title)
+        ? "Название урока"
+        : Title.Trim();
 }

@@ -40,12 +40,12 @@ Practice, assessment и verified-assessment MUST быть описаны с со
 [Future Verified] verified-assessment.html является производным четвертым artifact type. Он создается из assessment HTML, answer-key JSON и submission JSON, но не является самостоятельным authoring type с нуля.
 
 [Common] Default naming для связанных файлов MUST использовать явные type suffixes. Примеры:
-- lesson.theory.html.
-- lesson.practice.html.
-- lesson.assessment.html.
-- lesson.assessment.answer-key.json.
-- lesson.assessment.submission.json.
-- lesson.verified-assessment.html.
+- lesson-theory.html.
+- lesson-practice.html.
+- lesson-assessment.html.
+- lesson-assessment-answer-key.json.
+- lesson-assessment-submission.json.
+- lesson-verified-assessment.html.
 
 [Common] Save As MUST создавать новый documentId, чтобы ключи и submissions старого документа не смешивались с новой копией.
 

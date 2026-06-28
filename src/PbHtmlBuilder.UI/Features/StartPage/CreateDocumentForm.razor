@@ -132,7 +132,7 @@
             return extensionIndex > 0 ? fileName[..extensionIndex] : fileName;
         }
 
-        return Action.Label.Replace("New ", string.Empty, StringComparison.Ordinal);
+        return GetDefaultDocumentTitle(Action.Key);
     }
 
     private static void AddQueryParameter(List<string> queryParameters, string name, string value)
@@ -151,6 +151,14 @@
         "practice" => "/builder/practice",
         "assessment" => "/builder/assessment",
         _ => null
+    };
+
+    private static string GetDefaultDocumentTitle(string key) => key switch
+    {
+        "theory" => "Название урока",
+        "practice" => "Название практики",
+        "assessment" => "Название контрольной работы",
+        _ => "Document"
     };
 
     private static string GetDocumentTitlePlaceholder(string key) => key switch

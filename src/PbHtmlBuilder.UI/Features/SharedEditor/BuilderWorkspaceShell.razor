@@ -46,30 +46,38 @@
                 </button>
             }
         </nav>
+
+        @if (!string.IsNullOrWhiteSpace(SidebarFooter))
+        {
+            <div class="builder-sidebar-footer">@SidebarFooter</div>
+        }
     </aside>
 
     <main class="builder-main" aria-label="@($"{DocumentKind} builder")">
-        <div class="builder-canvas">
-            <section class="builder-section-map" aria-label="Section map">
+        @if (ShowSectionMap)
+        {
+            <section class="builder-section-map" aria-label="@MapTitle">
                 <div>
-                    <span>Map</span>
+                    <span>@MapLabel</span>
                     <h3>@MapTitle</h3>
                 </div>
                 <div class="builder-section-map-grid">
                     @foreach (var canvasItem in ResolvedCanvasItems)
                     {
-                        <button type="button" disabled>@canvasItem</button>
+                        <button type="button">@canvasItem</button>
                     }
                 </div>
             </section>
+        }
 
-            <article class="builder-section-skeleton">
-                <div class="builder-section-heading">
+        <article class="builder-section-skeleton">
+            <section class="builder-section">
+                <div class="builder-section-heading section-heading">
                     <span>01</span>
                     <h3>@PrimarySectionTitle</h3>
                 </div>
-            </article>
-        </div>
+            </section>
+        </article>
     </main>
 </div>
 
@@ -108,7 +116,16 @@
     public string MapTitle { get; set; } = "Section map";
 
     [Parameter]
+    public string MapLabel { get; set; } = "Map";
+
+    [Parameter]
+    public bool ShowSectionMap { get; set; } = true;
+
+    [Parameter]
     public string PrimarySectionTitle { get; set; } = "Untitled section";
+
+    [Parameter]
+    public string? SidebarFooter { get; set; }
 
     [Parameter]
     public IReadOnlyList<string> OutlineItems { get; set; } = DefaultOutlineItems;

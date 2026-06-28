@@ -1,11 +1,13 @@
 @page "/builder/assessment"
 
 <BuilderWorkspaceShell DocumentKind="Assessment"
-                       DocumentTitle="@Title"
+                       DocumentTitle="@ResolvedTitle"
                        Accent="#ffb703"
-                       OutlineLabel="Items"
+                       OutlineLabel="Оглавление"
                        MapTitle="Item set"
+                       ShowSectionMap="false"
                        PrimarySectionTitle="Assessment item"
+                       SidebarFooter="© Ivan Ivanov, 2026"
                        OutlineItems="OutlineItems"
                        CanvasItems="CanvasItems" />
 
@@ -33,4 +35,8 @@
 
     [SupplyParameterFromQuery(Name = "fileName")]
     public string? FileName { get; set; }
+
+    private string ResolvedTitle => string.IsNullOrWhiteSpace(Title)
+        ? "Название контрольной работы"
+        : Title.Trim();
 }

@@ -1,11 +1,13 @@
 @page "/builder/practice"
 
 <BuilderWorkspaceShell DocumentKind="Practice"
-                       DocumentTitle="@Title"
+                       DocumentTitle="@ResolvedTitle"
                        Accent="#b892ff"
-                       OutlineLabel="Tasks"
+                       OutlineLabel="Оглавление"
                        MapTitle="Task navigation"
+                       ShowSectionMap="false"
                        PrimarySectionTitle="Task prompt"
+                       SidebarFooter="© Ivan Ivanov, 2026"
                        OutlineItems="OutlineItems"
                        CanvasItems="CanvasItems" />
 
@@ -33,4 +35,8 @@
 
     [SupplyParameterFromQuery(Name = "fileName")]
     public string? FileName { get; set; }
+
+    private string ResolvedTitle => string.IsNullOrWhiteSpace(Title)
+        ? "Название практики"
+        : Title.Trim();
 }
