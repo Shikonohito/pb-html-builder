@@ -1,1 +1,36 @@
-@* Structure placeholder. *@
+@page "/builder/assessment"
+
+<BuilderWorkspaceShell DocumentKind="Assessment"
+                       DocumentTitle="@Title"
+                       Accent="#ffb703"
+                       OutlineLabel="Items"
+                       MapTitle="Item set"
+                       PrimarySectionTitle="Assessment item"
+                       OutlineItems="OutlineItems"
+                       CanvasItems="CanvasItems" />
+
+@code {
+    private static readonly string[] OutlineItems =
+    [
+        "Item 01"
+    ];
+
+    private static readonly string[] CanvasItems =
+    [
+        "Prompt",
+        "Single",
+        "Multiple",
+        "Text",
+        "Code",
+        "Key"
+    ];
+
+    [SupplyParameterFromQuery(Name = "title")]
+    public string? Title { get; set; }
+
+    [SupplyParameterFromQuery(Name = "folderPath")]
+    public string? FolderPath { get; set; }
+
+    [SupplyParameterFromQuery(Name = "fileName")]
+    public string? FileName { get; set; }
+}

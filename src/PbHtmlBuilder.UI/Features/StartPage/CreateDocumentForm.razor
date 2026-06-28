@@ -1,10 +1,12 @@
+@inject NavigationManager Navigation
+
 <div class="create-document" style="@($"--action-accent: {Action.Accent}")">
     <div class="create-document-head">
         <span class="create-document-icon" aria-hidden="true">@((MarkupString)GetActionIcon(Action.Key))</span>
         <h2>@Action.Label</h2>
     </div>
 
-    <form class="create-document-form" @onsubmit="HandleCreate">
+    <form class="create-document-form" @onsubmit="HandleCreate" @onsubmit:preventDefault="true">
         <label class="field-group" for="folderPath">
             <span>Save path</span>
             <span class="path-input-row">
@@ -13,7 +15,8 @@
                        type="text"
                        autocomplete="off"
                        placeholder="@Action.FolderPathPlaceholder"
-                       @bind="_folderPath" />
+                       @bind="_folderPath"
+                       @bind:event="oninput" />
                 <button class="folder-picker-button"
                         type="button"
                         title="Choose folder"
@@ -31,7 +34,19 @@
                    type="text"
                    autocomplete="off"
                    placeholder="@Action.FileNamePlaceholder"
-                   @bind="_fileName" />
+                   @bind="_fileName"
+                   @bind:event="oninput" />
+        </label>
+
+        <label class="field-group" for="documentTitle">
+            <span>Document title</span>
+            <input id="documentTitle"
+                   name="documentTitle"
+                   type="text"
+                   autocomplete="off"
+                   placeholder="@GetDocumentTitlePlaceholder(Action.Key)"
+                   @bind="_documentTitle"
+                   @bind:event="oninput" />
         </label>
 
         <div class="create-actions">
@@ -58,6 +73,7 @@
 
     private string _folderPath = "";
     private string _fileName = "";
+    private string _documentTitle = "";
     private bool _isFolderPickerOpen;
 
     private void OpenFolderPicker()
@@ -79,7 +95,71 @@
     private void HandleCreate()
     {
         _isFolderPickerOpen = false;
+
+        var builderRoute = GetBuilderRoute(Action.Key);
+        if (builderRoute is null)
+        {
+            return;
+        }
+
+        Navigation.NavigateTo(BuildBuilderUri(builderRoute));
     }
+
+    private string BuildBuilderUri(string route)
+    {
+        var queryParameters = new List<string>();
+
+        AddQueryParameter(queryParameters, "folderPath", _folderPath.Trim().Replace('\\', '/'));
+        AddQueryParameter(queryParameters, "fileName", _fileName.Trim());
+        AddQueryParameter(queryParameters, "title", ResolveDocumentTitle());
+
+        return queryParameters.Count == 0
+            ? route
+            : $"{route}?{string.Join("&", queryParameters)}";
+    }
+
+    private string ResolveDocumentTitle()
+    {
+        if (!string.IsNullOrWhiteSpace(_documentTitle))
+        {
+            return _documentTitle.Trim();
+        }
+
+        var fileName = _fileName.Trim();
+        if (!string.IsNullOrWhiteSpace(fileName))
+        {
+            var extensionIndex = fileName.LastIndexOf('.');
+            return extensionIndex > 0 ? fileName[..extensionIndex] : fileName;
+        }
+
+        return Action.Label.Replace("New ", string.Empty, StringComparison.Ordinal);
+    }
+
+    private static void AddQueryParameter(List<string> queryParameters, string name, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        queryParameters.Add($"{name}={Uri.EscapeDataString(value)}");
+    }
+
+    private static string? GetBuilderRoute(string key) => key switch
+    {
+        "theory" => "/builder/theory",
+        "practice" => "/builder/practice",
+        "assessment" => "/builder/assessment",
+        _ => null
+    };
+
+    private static string GetDocumentTitlePlaceholder(string key) => key switch
+    {
+        "theory" => "Lesson title",
+        "practice" => "Practice title",
+        "assessment" => "Assessment title",
+        _ => "Document title"
+    };
 
     private static string GetActionIcon(string key) => key switch
     {
