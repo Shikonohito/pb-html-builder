@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.App.Internal.Assets" PrivateAssets="all" />
     <ProjectReference Include="..\PbHtmlBuilder.UI\PbHtmlBuilder.UI.csproj" />
     <ProjectReference Include="..\PbHtmlBuilder.Application\PbHtmlBuilder.Application.csproj" />
     <ProjectReference Include="..\PbHtmlBuilder.Infrastructure\PbHtmlBuilder.Infrastructure.csproj" />

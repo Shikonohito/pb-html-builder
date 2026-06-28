@@ -6,6 +6,13 @@ publish/
 out/
 *.binlog
 
+# Logs, reports and local runtime state
+*.log
+*.binlog
+logs/
+temp/
+reports/
+
 # IDE and editor state
 .vs/
 .vscode/

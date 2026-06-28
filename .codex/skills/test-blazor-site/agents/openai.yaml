@@ -1,4 +1,0 @@
-interface:
-  display_name: "Test Blazor Site"
-  short_description: "Run and inspect local Blazor sites"
-  default_prompt: "Use $test-blazor-site to test the Blazor site in this workspace."

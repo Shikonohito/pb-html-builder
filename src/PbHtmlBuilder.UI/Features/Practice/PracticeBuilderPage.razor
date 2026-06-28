@@ -1,1 +1,36 @@
-@* Structure placeholder. *@
+@page "/builder/practice"
+
+<BuilderWorkspaceShell DocumentKind="Practice"
+                       DocumentTitle="@Title"
+                       Accent="#b892ff"
+                       OutlineLabel="Tasks"
+                       MapTitle="Task navigation"
+                       PrimarySectionTitle="Task prompt"
+                       OutlineItems="OutlineItems"
+                       CanvasItems="CanvasItems" />
+
+@code {
+    private static readonly string[] OutlineItems =
+    [
+        "Task 01"
+    ];
+
+    private static readonly string[] CanvasItems =
+    [
+        "Prompt",
+        "Hint",
+        "Code",
+        "Run",
+        "Debug",
+        "Tests"
+    ];
+
+    [SupplyParameterFromQuery(Name = "title")]
+    public string? Title { get; set; }
+
+    [SupplyParameterFromQuery(Name = "folderPath")]
+    public string? FolderPath { get; set; }
+
+    [SupplyParameterFromQuery(Name = "fileName")]
+    public string? FileName { get; set; }
+}

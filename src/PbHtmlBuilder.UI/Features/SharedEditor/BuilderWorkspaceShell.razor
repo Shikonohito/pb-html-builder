@@ -1,0 +1,143 @@
+<PageTitle>@ResolvedDocumentTitle - PbHtmlBuilder</PageTitle>
+
+<div class="builder-workspace @(_isSidebarCollapsed ? "is-sidebar-collapsed" : "")" style="@($"--builder-accent: {Accent}")">
+    <header class="builder-topbar">
+        <button class="builder-icon-button"
+                type="button"
+                title="Toggle sidebar"
+                aria-label="Toggle sidebar"
+                aria-expanded="@SidebarExpanded"
+                @onclick="ToggleSidebar">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 6h16" />
+                <path d="M4 12h16" />
+                <path d="M4 18h16" />
+            </svg>
+        </button>
+
+        <div class="builder-topic-title">
+            <span>@Kicker</span>
+            <h1>@ResolvedDocumentTitle</h1>
+        </div>
+    </header>
+
+    <aside class="builder-sidebar" aria-label="@OutlineLabel">
+        <div class="builder-sidebar-head">
+            <span>@OutlineLabel</span>
+            <button class="builder-panel-button"
+                    type="button"
+                    title="Collapse sidebar"
+                    aria-label="Collapse sidebar"
+                    @onclick="ToggleSidebar">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+            </button>
+        </div>
+
+        <nav class="builder-outline" aria-label="@OutlineLabel">
+            @if (PrimaryOutlineItem is { } outlineItem)
+            {
+                <button class="builder-outline-item is-current"
+                        type="button"
+                        aria-current="true">
+                    <span>01</span>
+                    <strong>@outlineItem</strong>
+                </button>
+            }
+        </nav>
+    </aside>
+
+    <main class="builder-main" aria-label="@($"{DocumentKind} builder")">
+        <div class="builder-canvas">
+            <section class="builder-section-map" aria-label="Section map">
+                <div>
+                    <span>Map</span>
+                    <h3>@MapTitle</h3>
+                </div>
+                <div class="builder-section-map-grid">
+                    @foreach (var canvasItem in ResolvedCanvasItems)
+                    {
+                        <button type="button" disabled>@canvasItem</button>
+                    }
+                </div>
+            </section>
+
+            <article class="builder-section-skeleton">
+                <div class="builder-section-heading">
+                    <span>01</span>
+                    <h3>@PrimarySectionTitle</h3>
+                </div>
+            </article>
+        </div>
+    </main>
+</div>
+
+@code {
+    private static readonly string[] DefaultOutlineItems =
+    [
+        "Section map"
+    ];
+
+    private static readonly string[] DefaultCanvasItems =
+    [
+        "Intro",
+        "Concept",
+        "Example",
+        "Practice",
+        "Review",
+        "Summary"
+    ];
+
+    [Parameter, EditorRequired]
+    public required string DocumentKind { get; set; }
+
+    [Parameter]
+    public string Kicker { get; set; } = "Python Bootcamp";
+
+    [Parameter]
+    public string? DocumentTitle { get; set; }
+
+    [Parameter]
+    public string Accent { get; set; } = "#4cc9f0";
+
+    [Parameter]
+    public string OutlineLabel { get; set; } = "Outline";
+
+    [Parameter]
+    public string MapTitle { get; set; } = "Section map";
+
+    [Parameter]
+    public string PrimarySectionTitle { get; set; } = "Untitled section";
+
+    [Parameter]
+    public IReadOnlyList<string> OutlineItems { get; set; } = DefaultOutlineItems;
+
+    [Parameter]
+    public IReadOnlyList<string> CanvasItems { get; set; } = DefaultCanvasItems;
+
+    private bool _isSidebarCollapsed;
+
+    private string ResolvedDocumentTitle => string.IsNullOrWhiteSpace(DocumentTitle)
+        ? $"Untitled {DocumentKind}"
+        : DocumentTitle.Trim();
+
+    private IReadOnlyList<string> ResolvedOutlineItems => OutlineItems.Count == 0
+        ? DefaultOutlineItems
+        : OutlineItems;
+
+    private string? PrimaryOutlineItem => ResolvedOutlineItems.Count == 0
+        ? null
+        : ResolvedOutlineItems[0];
+
+    private IReadOnlyList<string> ResolvedCanvasItems => CanvasItems.Count == 0
+        ? DefaultCanvasItems
+        : CanvasItems;
+
+    private string SidebarExpanded => (!_isSidebarCollapsed).ToString().ToLowerInvariant();
+
+    private void ToggleSidebar()
+    {
+        _isSidebarCollapsed = !_isSidebarCollapsed;
+    }
+}

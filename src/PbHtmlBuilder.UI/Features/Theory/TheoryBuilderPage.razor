@@ -1,1 +1,36 @@
-@* Structure placeholder. *@
+@page "/builder/theory"
+
+<BuilderWorkspaceShell DocumentKind="Theory"
+                       DocumentTitle="@Title"
+                       Accent="#4cc9f0"
+                       OutlineLabel="Sections"
+                       MapTitle="Section map"
+                       PrimarySectionTitle="Introduction"
+                       OutlineItems="OutlineItems"
+                       CanvasItems="CanvasItems" />
+
+@code {
+    private static readonly string[] OutlineItems =
+    [
+        "Section map"
+    ];
+
+    private static readonly string[] CanvasItems =
+    [
+        "Definition",
+        "Important",
+        "Hint",
+        "Correct",
+        "Incorrect",
+        "Quiz"
+    ];
+
+    [SupplyParameterFromQuery(Name = "title")]
+    public string? Title { get; set; }
+
+    [SupplyParameterFromQuery(Name = "folderPath")]
+    public string? FolderPath { get; set; }
+
+    [SupplyParameterFromQuery(Name = "fileName")]
+    public string? FileName { get; set; }
+}

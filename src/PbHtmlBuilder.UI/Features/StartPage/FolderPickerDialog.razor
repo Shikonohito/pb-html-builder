@@ -1,1 +1,70 @@
-@* Structure placeholder. *@
+<div class="folder-dialog-backdrop" role="presentation" @onclick="OnClose">
+    <div class="folder-dialog" role="dialog" aria-modal="true" aria-labelledby="folderDialogTitle" @onclick:stopPropagation="true">
+        <div class="folder-dialog-head">
+            <h3 id="folderDialogTitle">Choose folder</h3>
+            <button class="dialog-icon-button" type="button" title="Close" aria-label="Close" @onclick="OnClose">×</button>
+        </div>
+
+        <div class="folder-options" aria-label="Folders">
+            @foreach (var path in FolderOptions)
+            {
+                <button class="folder-option @(path == CurrentPath ? "is-selected" : "")"
+                        type="button"
+                        aria-pressed="@(path == CurrentPath)"
+                        @onclick="() => OnSelected.InvokeAsync(path)">
+                    <span>@(string.IsNullOrWhiteSpace(path) ? "." : path)</span>
+                </button>
+            }
+        </div>
+
+        <label class="field-group compact" for="folderDialogPath">
+            <span>Relative path</span>
+            <input id="folderDialogPath"
+                   type="text"
+                   autocomplete="off"
+                   placeholder="@FolderPathPlaceholder"
+                   @bind="_manualPath" />
+        </label>
+
+        <div class="dialog-actions">
+            <button class="create-button" type="button" @onclick="SelectManualPath">Select</button>
+            <button class="cancel-button" type="button" @onclick="OnClose">Cancel</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string CurrentPath { get; set; } = "";
+
+    [Parameter]
+    public string FolderPathPlaceholder { get; set; } = "projects/theory";
+
+    [Parameter]
+    public EventCallback<string> OnSelected { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private string _manualPath = "";
+
+    private static readonly string[] FolderOptions =
+    [
+        "",
+        "projects",
+        "projects/theory",
+        "projects/practice",
+        "projects/assessment",
+        "projects/verified-assessment"
+    ];
+
+    protected override void OnParametersSet()
+    {
+        _manualPath = CurrentPath;
+    }
+
+    private Task SelectManualPath()
+    {
+        return OnSelected.InvokeAsync(_manualPath.Trim().Replace('\\', '/'));
+    }
+}
