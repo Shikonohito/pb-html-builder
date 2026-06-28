@@ -72,15 +72,15 @@ button {
   display: grid;
   width: 200%;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: margin-left 340ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .start-slider.is-actions {
-  transform: translateX(0);
+  margin-left: 0;
 }
 
 .start-slider.is-create {
-  transform: translateX(-50%);
+  margin-left: -100%;
 }
 
 .start-slide {
