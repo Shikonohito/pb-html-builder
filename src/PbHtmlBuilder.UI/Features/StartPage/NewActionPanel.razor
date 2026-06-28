@@ -17,10 +17,10 @@
 
     private static readonly StartDocumentAction[] Actions =
     [
-        new("theory", "New Theory", "#4cc9f0"),
-        new("practice", "New Practice", "#b892ff"),
-        new("assessment", "New Assessment", "#ffb703"),
-        new("verified-assessment", "New Verified Assessment", "#3ddc97")
+        new("theory", "New Theory", "#4cc9f0", "projects/theory", "lesson-theory.html"),
+        new("practice", "New Practice", "#b892ff", "projects/practice", "lesson-practice.html"),
+        new("assessment", "New Assessment", "#ffb703", "projects/assessment", "lesson-assessment.html"),
+        new("verified-assessment", "New Verified Assessment", "#3ddc97", "projects/verified-assessment", "lesson-verified-assessment.html")
     ];
 
     private static string GetIcon(string key) => key switch

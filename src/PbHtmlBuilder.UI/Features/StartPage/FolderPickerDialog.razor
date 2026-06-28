@@ -22,7 +22,7 @@
             <input id="folderDialogPath"
                    type="text"
                    autocomplete="off"
-                   placeholder="projects/theory"
+                   placeholder="@FolderPathPlaceholder"
                    @bind="_manualPath" />
         </label>
 
@@ -38,6 +38,9 @@
     public string CurrentPath { get; set; } = "";
 
     [Parameter]
+    public string FolderPathPlaceholder { get; set; } = "projects/theory";
+
+    [Parameter]
     public EventCallback<string> OnSelected { get; set; }
 
     [Parameter]
@@ -51,7 +54,8 @@
         "projects",
         "projects/theory",
         "projects/practice",
-        "projects/assessment"
+        "projects/assessment",
+        "projects/verified-assessment"
     ];
 
     protected override void OnParametersSet()

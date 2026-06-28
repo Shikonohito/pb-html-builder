@@ -12,7 +12,7 @@
                        name="folderPath"
                        type="text"
                        autocomplete="off"
-                       placeholder="projects/theory"
+                       placeholder="@Action.FolderPathPlaceholder"
                        @bind="_folderPath" />
                 <button class="folder-picker-button"
                         type="button"
@@ -30,7 +30,7 @@
                    name="fileName"
                    type="text"
                    autocomplete="off"
-                   placeholder="intro-to-html.html"
+                   placeholder="@Action.FileNamePlaceholder"
                    @bind="_fileName" />
         </label>
 
@@ -43,6 +43,7 @@
     @if (_isFolderPickerOpen)
     {
         <FolderPickerDialog CurrentPath="@_folderPath"
+                            FolderPathPlaceholder="@Action.FolderPathPlaceholder"
                             OnSelected="SelectFolder"
                             OnClose="CloseFolderPicker" />
     }
