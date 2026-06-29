@@ -428,7 +428,9 @@ input:focus-visible {
 
 .folder-dialog {
   display: grid;
-  width: min(460px, 100%);
+  width: min(760px, 100%);
+  max-height: min(760px, calc(100vh - 36px));
+  overflow: auto;
   gap: 16px;
   padding: 18px;
   border: 1px solid var(--start-line);

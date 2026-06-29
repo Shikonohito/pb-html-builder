@@ -1,5 +1,5 @@
 <div class="project-dialog-backdrop" role="presentation" @onclick="OnClose">
-    <div class="project-dialog" role="dialog" aria-modal="true" aria-labelledby="saveAsDialogTitle" @onclick:stopPropagation="true">
+    <div class="project-dialog is-save-as" role="dialog" aria-modal="true" aria-labelledby="saveAsDialogTitle" @onclick:stopPropagation="true">
         <div class="project-dialog-head">
             <h3 id="saveAsDialogTitle">Save as...</h3>
             <button class="project-dialog-icon-button" type="button" title="Close" aria-label="Close" @onclick="OnClose">×</button>
@@ -18,24 +18,19 @@
         <form class="project-dialog-form" @onsubmit="Submit" @onsubmit:preventDefault="true">
             <label class="builder-field-group" for="saveAsFolderPath">
                 <span>Save path</span>
-                <span class="builder-path-input-row">
-                    <input id="saveAsFolderPath"
-                           type="text"
-                           autocomplete="off"
-                           placeholder="projects/theory"
-                           @bind="_folderPath"
-                           @bind:event="oninput" />
-                    <button class="builder-folder-picker-button"
-                            type="button"
-                            title="Choose folder"
-                            aria-label="Choose folder"
-                            @onclick="OpenFolderPicker">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                    </button>
-                </span>
+                <input id="saveAsFolderPath"
+                       type="text"
+                       autocomplete="off"
+                       placeholder="projects/theory"
+                       @bind="_folderPath"
+                       @bind:event="oninput" />
             </label>
+
+            <FileSystemPicker CurrentPath="@PickerPath"
+                              DefaultPath="projects/theory"
+                              AllowFileSelection="true"
+                              OnFolderSelected="SelectFolder"
+                              OnFileSelected="SelectFile" />
 
             <label class="builder-field-group" for="saveAsFileName">
                 <span>File name</span>
@@ -52,14 +47,6 @@
                 <button class="project-secondary-button" type="button" @onclick="OnClose">Cancel</button>
             </div>
         </form>
-
-        @if (_isFolderPickerOpen)
-        {
-            <FolderPickerDialog CurrentPath="@_folderPath"
-                                FolderPathPlaceholder="projects/theory"
-                                OnSelected="SelectFolder"
-                                OnClose="CloseFolderPicker" />
-        }
     </div>
 </div>
 
@@ -78,8 +65,11 @@
 
     private string _folderPath = "";
     private string _fileName = "";
-    private bool _isFolderPickerOpen;
     private bool _initialized;
+
+    private string PickerPath => string.IsNullOrWhiteSpace(_folderPath)
+        ? "projects/theory"
+        : _folderPath;
 
     protected override void OnParametersSet()
     {
@@ -93,25 +83,19 @@
         _initialized = true;
     }
 
-    private void OpenFolderPicker()
-    {
-        _isFolderPickerOpen = true;
-    }
-
-    private void CloseFolderPicker()
-    {
-        _isFolderPickerOpen = false;
-    }
-
     private void SelectFolder(string path)
     {
         _folderPath = path;
-        _isFolderPickerOpen = false;
+    }
+
+    private void SelectFile(FolderBrowseEntry entry)
+    {
+        _folderPath = entry.SelectionPath;
+        _fileName = entry.Name;
     }
 
     private Task Submit()
     {
-        _isFolderPickerOpen = false;
         return OnSubmitted.InvokeAsync(DocumentTarget.Create(_folderPath, _fileName));
     }
 }

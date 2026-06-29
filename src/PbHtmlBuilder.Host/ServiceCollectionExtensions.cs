@@ -1,4 +1,5 @@
 using PbHtmlBuilder.Host.Configuration;
+using PbHtmlBuilder.Host.Endpoints;
 using PbHtmlBuilder.Application.Projects;
 using PbHtmlBuilder.Application.Theory;
 using PbHtmlBuilder.Artifacts.Renderers;
@@ -20,6 +21,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ITheoryHtmlRenderer, TheoryHtmlRenderer>();
+        services.AddSingleton<IProjectFolderBrowser, ProjectFolderBrowser>();
         services.AddSingleton<IProjectFileStorage>(serviceProvider =>
         {
             var environment = serviceProvider.GetRequiredService<IWebHostEnvironment>();
@@ -28,7 +30,7 @@ public static class ServiceCollectionExtensions
                 .Get<WorkingDirectoryOptions>() ?? new WorkingDirectoryOptions();
 
             return new WorkingDirectoryProjectFileStorage(
-                ResolveWorkingDirectoryRoot(environment, workingDirectory),
+                WorkingDirectoryRootResolver.Resolve(environment, workingDirectory),
                 serviceProvider.GetRequiredService<TimeProvider>());
         });
         services.AddSingleton(serviceProvider =>
@@ -61,18 +63,5 @@ public static class ServiceCollectionExtensions
         services.AddScoped<TheoryProjectSaveUseCase>();
 
         return services;
-    }
-
-    private static string ResolveWorkingDirectoryRoot(
-        IWebHostEnvironment environment,
-        WorkingDirectoryOptions options)
-    {
-        if (!string.IsNullOrWhiteSpace(options.RootPath)
-            && !options.RootMode.Equals("AppDirectory", StringComparison.OrdinalIgnoreCase))
-        {
-            return options.RootPath;
-        }
-
-        return environment.ContentRootPath;
     }
 }

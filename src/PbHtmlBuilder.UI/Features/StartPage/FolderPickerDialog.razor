@@ -5,26 +5,10 @@
             <button class="dialog-icon-button" type="button" title="Close" aria-label="Close" @onclick="OnClose">×</button>
         </div>
 
-        <div class="folder-options" aria-label="Folders">
-            @foreach (var path in FolderOptions)
-            {
-                <button class="folder-option @(path == CurrentPath ? "is-selected" : "")"
-                        type="button"
-                        aria-pressed="@(path == CurrentPath)"
-                        @onclick="() => OnSelected.InvokeAsync(path)">
-                    <span>@(string.IsNullOrWhiteSpace(path) ? "." : path)</span>
-                </button>
-            }
-        </div>
-
-        <label class="field-group compact" for="folderDialogPath">
-            <span>Relative path</span>
-            <input id="folderDialogPath"
-                   type="text"
-                   autocomplete="off"
-                   placeholder="@FolderPathPlaceholder"
-                   @bind="_manualPath" />
-        </label>
+        <FileSystemPicker CurrentPath="@InitialPickerPath"
+                          DefaultPath="@FolderPathPlaceholder"
+                          AllowFileSelection="false"
+                          OnFolderSelected="SelectInDialog" />
 
         <div class="dialog-actions">
             <button class="create-button" type="button" @onclick="SelectManualPath">Select</button>
@@ -46,25 +30,24 @@
     [Parameter]
     public EventCallback OnClose { get; set; }
 
-    private string _manualPath = "";
+    private string _selectedPath = "";
 
-    private static readonly string[] FolderOptions =
-    [
-        "",
-        "projects",
-        "projects/theory",
-        "projects/practice",
-        "projects/assessment",
-        "projects/verified-assessment"
-    ];
+    private string InitialPickerPath => string.IsNullOrWhiteSpace(CurrentPath)
+        ? FolderPathPlaceholder
+        : CurrentPath;
 
     protected override void OnParametersSet()
     {
-        _manualPath = CurrentPath;
+        _selectedPath = InitialPickerPath;
+    }
+
+    private void SelectInDialog(string path)
+    {
+        _selectedPath = path;
     }
 
     private Task SelectManualPath()
     {
-        return OnSelected.InvokeAsync(_manualPath.Trim().Replace('\\', '/'));
+        return OnSelected.InvokeAsync(_selectedPath.Trim());
     }
 }

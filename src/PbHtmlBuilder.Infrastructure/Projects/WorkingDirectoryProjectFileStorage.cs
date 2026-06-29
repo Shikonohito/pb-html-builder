@@ -39,8 +39,7 @@ public sealed class WorkingDirectoryProjectFileStorage : IProjectFileStorage
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
 
-        _rootPath = Path.GetFullPath(rootPath)
-            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        _rootPath = TrimTrailingDirectorySeparators(Path.GetFullPath(rootPath));
         _clock = clock;
     }
 
@@ -131,9 +130,7 @@ public sealed class WorkingDirectoryProjectFileStorage : IProjectFileStorage
 
         File.Copy(resolved.FullPath, backupFullPath, overwrite: false);
 
-        return string.IsNullOrWhiteSpace(resolved.Target.FolderPath)
-            ? backupFileName
-            : $"{resolved.Target.FolderPath}/{backupFileName}";
+        return BuildDisplayPath(resolved.Target.FolderPath, backupFileName);
     }
 
     private ResolvedProjectPath Resolve(DocumentTarget target)
@@ -147,21 +144,22 @@ public sealed class WorkingDirectoryProjectFileStorage : IProjectFileStorage
             return ResolvedProjectPath.Invalid(errors);
         }
 
+        var folderIsAbsolute = IsAbsoluteFolderPath(folderPath);
         var directoryPath = string.IsNullOrWhiteSpace(folderPath)
             ? _rootPath
-            : Path.Combine(_rootPath, Path.Combine(folderPath.Split('/')));
+            : folderIsAbsolute
+                ? folderPath
+                : Path.Combine(_rootPath, Path.Combine(folderPath.Split('/')));
         var fullPath = Path.GetFullPath(Path.Combine(directoryPath, fileName));
 
-        if (!IsWithinRoot(fullPath))
+        if (!folderIsAbsolute && !IsWithinRoot(fullPath))
         {
             errors.Add("Path resolves outside the app working directory.");
             return ResolvedProjectPath.Invalid(errors);
         }
 
         var normalizedTarget = new DocumentTarget(folderPath, fileName);
-        var relativePath = string.IsNullOrWhiteSpace(folderPath)
-            ? fileName
-            : $"{folderPath}/{fileName}";
+        var relativePath = BuildDisplayPath(folderPath, fileName);
 
         return new ResolvedProjectPath(
             normalizedTarget,
@@ -185,13 +183,13 @@ public sealed class WorkingDirectoryProjectFileStorage : IProjectFileStorage
             return string.Empty;
         }
 
-        var normalized = value.Trim().Replace('\\', '/').Trim('/');
-        if (Path.IsPathRooted(normalized) || Path.IsPathFullyQualified(normalized))
+        var trimmed = value.Trim();
+        if (IsAbsoluteFolderPath(trimmed))
         {
-            errors.Add("Folder path must be relative.");
-            return normalized;
+            return NormalizeAbsoluteFolderPath(trimmed, errors);
         }
 
+        var normalized = trimmed.Replace('\\', '/').Trim('/');
         var segments = normalized.Split('/', StringSplitOptions.RemoveEmptyEntries);
         foreach (var segment in segments)
         {
@@ -199,6 +197,21 @@ public sealed class WorkingDirectoryProjectFileStorage : IProjectFileStorage
         }
 
         return string.Join('/', segments);
+    }
+
+    private static string NormalizeAbsoluteFolderPath(string value, List<string> errors)
+    {
+        try
+        {
+            return TrimTrailingDirectorySeparators(Path.GetFullPath(value));
+        }
+        catch (Exception exception) when (exception is ArgumentException
+            or NotSupportedException
+            or PathTooLongException)
+        {
+            errors.Add($"Folder path is invalid: {exception.Message}");
+            return value;
+        }
     }
 
     private static string NormalizeFileName(string? value, List<string> errors)
@@ -253,6 +266,39 @@ public sealed class WorkingDirectoryProjectFileStorage : IProjectFileStorage
         {
             errors.Add($"{label} segments must not end with a space or period.");
         }
+    }
+
+    private static string BuildDisplayPath(string folderPath, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(folderPath))
+        {
+            return fileName;
+        }
+
+        return IsAbsoluteFolderPath(folderPath)
+            ? Path.Combine(folderPath, fileName)
+            : $"{folderPath}/{fileName}";
+    }
+
+    private static bool IsAbsoluteFolderPath(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value)
+            && (Path.IsPathFullyQualified(value) || Path.IsPathRooted(value));
+    }
+
+    private static string TrimTrailingDirectorySeparators(string path)
+    {
+        var root = Path.GetPathRoot(path);
+        var trimmed = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            return path;
+        }
+
+        return !string.IsNullOrEmpty(root) && trimmed.Length < root.Length
+            ? root
+            : trimmed;
     }
 
     private sealed record ResolvedProjectPath(

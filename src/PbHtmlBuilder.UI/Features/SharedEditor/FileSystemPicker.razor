@@ -1,0 +1,197 @@
+@inject IProjectFolderBrowser FolderBrowser
+
+<div class="filesystem-picker">
+    <div class="filesystem-toolbar" role="toolbar" aria-label="File system navigation">
+        <button class="filesystem-tool-button"
+                type="button"
+                title="Up"
+                aria-label="Up"
+                disabled="@(_browse?.ParentPath is null)"
+                @onclick="NavigateUp">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m18 15-6-6-6 6" />
+            </svg>
+        </button>
+        <button class="filesystem-tool-button"
+                type="button"
+                title="Project root"
+                aria-label="Project root"
+                @onclick="NavigateRoot">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 11h18" />
+                <path d="m5 11 7-7 7 7" />
+                <path d="M5 10v10h14V10" />
+            </svg>
+        </button>
+        <button class="filesystem-tool-button"
+                type="button"
+                title="Refresh"
+                aria-label="Refresh"
+                @onclick="Refresh">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                <path d="M3 21v-5h5" />
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                <path d="M16 8h5V3" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="filesystem-path-stack" aria-live="polite">
+        <div>
+            <span>Current</span>
+            <code>@(_browse?.CurrentDisplayPath ?? DefaultPath)</code>
+        </div>
+    </div>
+
+    @if (_browse?.Errors.Count > 0)
+    {
+        <div class="filesystem-errors" role="alert">
+            @foreach (var error in _browse.Errors)
+            {
+                <p>@error</p>
+            }
+        </div>
+    }
+
+    <div class="filesystem-entry-list" role="listbox" aria-label="Files and folders">
+        @if (_browse is null)
+        {
+            <div class="filesystem-empty">No folder loaded</div>
+        }
+        else if (_browse.Entries.Count == 0)
+        {
+            <div class="filesystem-empty">This folder is empty</div>
+        }
+        else
+        {
+            @foreach (var entry in _browse.Entries)
+            {
+                var isDirectory = entry.Kind == FolderBrowseEntryKind.Directory;
+                var isEnabled = entry.IsAccessible && (isDirectory || AllowFileSelection);
+                var isSelected = isDirectory && IsSelected(entry.SelectionPath);
+
+                <button @key="entry.FullPath"
+                        class="filesystem-entry @(isDirectory ? "is-directory" : "is-file") @(isSelected ? "is-selected" : "")"
+                        type="button"
+                        role="option"
+                        aria-selected="@isSelected"
+                        aria-disabled="@(!isEnabled)"
+                        disabled="@(!isEnabled)"
+                        title="@entry.FullPath"
+                        @onclick="() => SelectEntry(entry)">
+                    <span class="filesystem-entry-icon" aria-hidden="true">
+                        @if (isDirectory)
+                        {
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                            </svg>
+                        }
+                        else
+                        {
+                            <svg viewBox="0 0 24 24">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <path d="M14 2v6h6" />
+                            </svg>
+                        }
+                    </span>
+                    <span class="filesystem-entry-name">@entry.Name</span>
+                    <span class="filesystem-entry-kind">@(isDirectory ? "Folder" : "File")</span>
+                </button>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string CurrentPath { get; set; } = "projects/theory";
+
+    [Parameter]
+    public string DefaultPath { get; set; } = "projects/theory";
+
+    [Parameter]
+    public bool AllowFileSelection { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnFolderSelected { get; set; }
+
+    [Parameter]
+    public EventCallback<FolderBrowseEntry> OnFileSelected { get; set; }
+
+    private FolderBrowseResponse? _browse;
+    private string _loadedPath = "";
+    private string _selectedFolderPath = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var requestedPath = ResolveRequestedPath();
+        if (_browse is not null
+            && string.Equals(_loadedPath, requestedPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        await BrowseToAsync(requestedPath);
+    }
+
+    private string ResolveRequestedPath()
+    {
+        return string.IsNullOrWhiteSpace(CurrentPath) ? DefaultPath : CurrentPath.Trim();
+    }
+
+    private async Task BrowseToAsync(string? path)
+    {
+        var requestedPath = string.IsNullOrWhiteSpace(path) ? DefaultPath : path;
+        _browse = FolderBrowser.Browse(requestedPath);
+        _loadedPath = requestedPath;
+        _selectedFolderPath = _browse.RequestedSelectionPath;
+        await OnFolderSelected.InvokeAsync(_browse.RequestedSelectionPath);
+    }
+
+    private async Task SelectEntry(FolderBrowseEntry entry)
+    {
+        if (!entry.IsAccessible)
+        {
+            return;
+        }
+
+        if (entry.Kind == FolderBrowseEntryKind.Directory)
+        {
+            await BrowseToAsync(entry.FullPath);
+            return;
+        }
+
+        if (AllowFileSelection)
+        {
+            _selectedFolderPath = entry.SelectionPath;
+            await OnFileSelected.InvokeAsync(entry);
+        }
+    }
+
+    private async Task NavigateUp()
+    {
+        if (_browse?.ParentPath is { } parentPath)
+        {
+            await BrowseToAsync(parentPath);
+        }
+    }
+
+    private Task NavigateRoot()
+    {
+        return BrowseToAsync(".");
+    }
+
+    private Task Refresh()
+    {
+        return BrowseToAsync(_browse?.CurrentPath ?? ResolveRequestedPath());
+    }
+
+    private bool IsSelected(string path)
+    {
+        return string.Equals(
+            path,
+            _selectedFolderPath,
+            StringComparison.OrdinalIgnoreCase);
+    }
+}

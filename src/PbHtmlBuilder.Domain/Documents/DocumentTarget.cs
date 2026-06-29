@@ -4,7 +4,9 @@ public sealed record DocumentTarget(string FolderPath, string FileName)
 {
     public string DisplayPath => string.IsNullOrWhiteSpace(FolderPath)
         ? FileName
-        : $"{FolderPath.Trim().Replace('\\', '/')}/{FileName}";
+        : IsAbsoluteFolderPath(FolderPath)
+            ? Path.Combine(FolderPath.Trim(), FileName)
+            : $"{FolderPath.Trim().Replace('\\', '/')}/{FileName}";
 
     public static DocumentTarget Create(string? folderPath, string? fileName)
     {
@@ -20,6 +22,41 @@ public sealed record DocumentTarget(string FolderPath, string FileName)
             return string.Empty;
         }
 
-        return value.Trim().Replace('\\', '/').Trim('/');
+        var trimmed = value.Trim();
+        if (IsAbsoluteFolderPath(trimmed))
+        {
+            try
+            {
+                return TrimTrailingDirectorySeparators(Path.GetFullPath(trimmed));
+            }
+            catch (Exception exception) when (exception is ArgumentException
+                or NotSupportedException
+                or PathTooLongException)
+            {
+                return trimmed;
+            }
+        }
+
+        return trimmed.Replace('\\', '/').Trim('/');
+    }
+
+    private static bool IsAbsoluteFolderPath(string value)
+    {
+        return Path.IsPathFullyQualified(value) || Path.IsPathRooted(value);
+    }
+
+    private static string TrimTrailingDirectorySeparators(string path)
+    {
+        var root = Path.GetPathRoot(path);
+        var trimmed = path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            return path;
+        }
+
+        return !string.IsNullOrEmpty(root) && trimmed.Length < root.Length
+            ? root
+            : trimmed;
     }
 }

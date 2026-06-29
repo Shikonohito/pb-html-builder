@@ -597,6 +597,191 @@
   line-height: 1.4;
 }
 
+.project-dialog.is-save-as {
+  width: min(780px, 100%);
+}
+
+.filesystem-picker {
+  --filesystem-bg: #111318;
+  --filesystem-surface: #191d24;
+  --filesystem-surface-strong: #202630;
+  --filesystem-text: #f5f1e8;
+  --filesystem-muted: #c2c5c9;
+  --filesystem-line: #3b414c;
+  --filesystem-accent: var(--builder-accent, var(--action-accent, #4cc9f0));
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--filesystem-line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--filesystem-bg) 52%, var(--filesystem-surface));
+  color: var(--filesystem-text);
+}
+
+.filesystem-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filesystem-tool-button {
+  display: inline-grid;
+  width: 38px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--filesystem-line);
+  border-radius: 8px;
+  background: var(--filesystem-surface-strong);
+  color: var(--filesystem-text);
+  cursor: pointer;
+}
+
+.filesystem-tool-button:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.filesystem-tool-button:hover:not(:disabled),
+.filesystem-entry:hover:not(:disabled),
+.filesystem-entry.is-selected {
+  border-color: var(--filesystem-accent);
+  background: color-mix(in srgb, var(--filesystem-accent) 12%, var(--filesystem-surface-strong));
+  color: var(--filesystem-text);
+}
+
+.filesystem-tool-button:focus-visible,
+.filesystem-entry:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--filesystem-accent) 72%, transparent);
+  outline-offset: 2px;
+}
+
+.filesystem-tool-button svg,
+.filesystem-entry-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.filesystem-path-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.filesystem-path-stack > div {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.filesystem-path-stack span {
+  color: var(--filesystem-muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.filesystem-path-stack code {
+  overflow: hidden;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid var(--filesystem-line);
+  border-radius: 8px;
+  background: var(--filesystem-bg);
+  color: var(--filesystem-text);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.filesystem-errors {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, #ff8a8a 70%, var(--filesystem-line));
+  border-radius: 8px;
+  background: color-mix(in srgb, #ff8a8a 12%, var(--filesystem-surface));
+  color: #ffd5d5;
+}
+
+.filesystem-errors p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.filesystem-entry-list {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 260px;
+  max-height: min(360px, 42vh);
+  overflow: auto;
+}
+
+.filesystem-entry {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--filesystem-muted);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.filesystem-entry:disabled {
+  cursor: default;
+  opacity: 0.58;
+}
+
+.filesystem-entry-icon {
+  display: inline-grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  color: var(--filesystem-accent);
+}
+
+.filesystem-entry-name {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filesystem-entry-kind {
+  color: color-mix(in srgb, var(--filesystem-muted) 68%, transparent);
+  font-size: 0.72rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.filesystem-empty {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  border: 1px dashed color-mix(in srgb, var(--filesystem-line) 84%, transparent);
+  border-radius: 8px;
+  color: color-mix(in srgb, var(--filesystem-muted) 74%, transparent);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
 .builder-save-toast.is-success {
   border-color: color-mix(in srgb, #3ddc97 62%, #3b414c);
 }

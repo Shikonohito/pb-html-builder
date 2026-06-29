@@ -1,6 +1,8 @@
 # Build output
 bin/
 obj/
+build-bin/
+build-obj/
 artifacts/
 publish/
 out/
