@@ -354,3 +354,254 @@
     padding: 18px;
   }
 }
+
+.project-menu-dismiss-layer {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+}
+
+.project-context-menu,
+.project-context-submenu {
+  min-width: 176px;
+  padding: 6px;
+  border: 1px solid #3b414c;
+  border-radius: 8px;
+  background: #202630;
+  color: #f5f1e8;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+}
+
+.project-context-menu {
+  position: fixed;
+  z-index: 100;
+}
+
+.project-menu-branch {
+  position: relative;
+}
+
+.project-context-submenu {
+  position: absolute;
+  top: -7px;
+  left: calc(100% + 6px);
+  display: none;
+}
+
+.project-menu-branch:hover .project-context-submenu,
+.project-menu-branch:focus-within .project-context-submenu {
+  display: grid;
+}
+
+.project-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 750;
+  text-align: left;
+}
+
+.project-menu-item:hover,
+.project-menu-item:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, #4cc9f0 18%, transparent);
+}
+
+.project-dialog-backdrop {
+  position: fixed;
+  z-index: 110;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.project-dialog {
+  display: grid;
+  gap: 16px;
+  width: min(520px, 100%);
+  max-height: min(720px, calc(100vh - 48px));
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid #3b414c;
+  border-radius: 8px;
+  background: #191d24;
+  color: #f5f1e8;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.36);
+}
+
+.project-dialog.compact {
+  width: min(460px, 100%);
+}
+
+.project-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.project-dialog-head h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.project-dialog-icon-button {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid #3b414c;
+  border-radius: 8px;
+  background: #202630;
+  color: #f5f1e8;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.project-dialog-form,
+.builder-field-group {
+  display: grid;
+  gap: 12px;
+}
+
+.builder-field-group {
+  color: #c2c5c9;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.builder-field-group input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #3b414c;
+  border-radius: 8px;
+  background: #111318;
+  color: #f5f1e8;
+  font: inherit;
+}
+
+.builder-field-group input:focus {
+  outline: 2px solid color-mix(in srgb, #4cc9f0 70%, transparent);
+  outline-offset: 2px;
+}
+
+.builder-path-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 10px;
+}
+
+.builder-folder-picker-button {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #3b414c;
+  border-radius: 8px;
+  background: #202630;
+  color: #f5f1e8;
+  cursor: pointer;
+}
+
+.builder-folder-picker-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.project-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.project-primary-button,
+.project-secondary-button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #3b414c;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.project-primary-button {
+  border-color: color-mix(in srgb, #4cc9f0 72%, #3b414c);
+  background: #4cc9f0;
+  color: #081116;
+}
+
+.project-secondary-button {
+  background: #202630;
+  color: #f5f1e8;
+}
+
+.project-dialog-errors {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, #ff8a8a 70%, #3b414c);
+  border-radius: 8px;
+  background: color-mix(in srgb, #ff8a8a 12%, #191d24);
+  color: #ffd5d5;
+}
+
+.project-dialog-errors p,
+.project-confirm-message {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.project-confirm-message {
+  color: #c2c5c9;
+}
+
+.builder-save-toast {
+  position: fixed;
+  z-index: 130;
+  right: 24px;
+  bottom: 24px;
+  max-width: min(420px, calc(100vw - 48px));
+  padding: 12px 14px;
+  border: 1px solid #3b414c;
+  border-radius: 8px;
+  background: #202630;
+  color: #f5f1e8;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.builder-save-toast.is-success {
+  border-color: color-mix(in srgb, #3ddc97 62%, #3b414c);
+}
+
+.builder-save-toast.is-error {
+  border-color: color-mix(in srgb, #ff8a8a 70%, #3b414c);
+  color: #ffd5d5;
+}

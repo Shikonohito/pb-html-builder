@@ -1,6 +1,11 @@
+@inject TheoryProjectSaveUseCase SaveUseCase
+
 <PageTitle>@ResolvedDocumentTitle - PbHtmlBuilder</PageTitle>
 
-<div class="builder-workspace @(_isSidebarCollapsed ? "is-sidebar-collapsed" : "")" style="@($"--builder-accent: {Accent}")">
+<div class="builder-workspace @(_isSidebarCollapsed ? "is-sidebar-collapsed" : "")"
+     style="@($"--builder-accent: {Accent}")"
+     @oncontextmenu="OpenProjectContextMenu"
+     @oncontextmenu:preventDefault="ProjectCommandsAvailable">
     <header class="builder-topbar">
         <button class="builder-icon-button"
                 type="button"
@@ -81,6 +86,39 @@
     </main>
 </div>
 
+@if (_isProjectContextMenuOpen)
+{
+    <ProjectContextMenu X="_projectContextMenuX"
+                        Y="_projectContextMenuY"
+                        OnSave="SaveProject"
+                        OnSaveAs="OpenSaveAsDialog"
+                        OnClose="CloseProjectContextMenu" />
+}
+
+@if (_isSaveAsDialogOpen && TheoryDocument is not null)
+{
+    <SaveAsDialog CurrentTarget="TheoryDocument.Target"
+                  Errors="_saveAsErrors"
+                  OnSubmitted="SaveProjectAs"
+                  OnClose="CloseSaveAsDialog" />
+}
+
+@if (_confirmation is not null)
+{
+    <ProjectConfirmationDialog Title="@_confirmation.Title"
+                               Message="@_confirmation.Message"
+                               ConfirmLabel="@_confirmation.ConfirmLabel"
+                               OnConfirm="ConfirmPendingSave"
+                               OnCancel="CancelPendingSave" />
+}
+
+@if (_toast is not null)
+{
+    <div class="builder-save-toast @(_toast.IsError ? "is-error" : "is-success")" role="status">
+        @_toast.Message
+    </div>
+}
+
 @code {
     private static readonly string[] DefaultOutlineItems =
     [
@@ -133,10 +171,25 @@
     [Parameter]
     public IReadOnlyList<string> CanvasItems { get; set; } = DefaultCanvasItems;
 
+    [Parameter]
+    public TheoryDocument? TheoryDocument { get; set; }
+
+    [Parameter]
+    public EventCallback<TheoryDocument> OnTheoryDocumentChanged { get; set; }
+
     private bool _isSidebarCollapsed;
+    private bool _isProjectContextMenuOpen;
+    private double _projectContextMenuX;
+    private double _projectContextMenuY;
+    private bool _isSaveAsDialogOpen;
+    private IReadOnlyList<string> _saveAsErrors = [];
+    private SaveConfirmation? _confirmation;
+    private PendingSave? _pendingSave;
+    private SaveToast? _toast;
+    private int _toastSession;
 
     private string ResolvedDocumentTitle => string.IsNullOrWhiteSpace(DocumentTitle)
-        ? $"Untitled {DocumentKind}"
+        ? TheoryDocument?.DocumentTitle ?? $"Untitled {DocumentKind}"
         : DocumentTitle.Trim();
 
     private IReadOnlyList<string> ResolvedOutlineItems => OutlineItems.Count == 0
@@ -153,8 +206,170 @@
 
     private string SidebarExpanded => (!_isSidebarCollapsed).ToString().ToLowerInvariant();
 
+    private bool ProjectCommandsAvailable => TheoryDocument is not null;
+
     private void ToggleSidebar()
     {
         _isSidebarCollapsed = !_isSidebarCollapsed;
     }
+
+    private void OpenProjectContextMenu(MouseEventArgs args)
+    {
+        if (!ProjectCommandsAvailable)
+        {
+            return;
+        }
+
+        _projectContextMenuX = args.ClientX;
+        _projectContextMenuY = args.ClientY;
+        _isProjectContextMenuOpen = true;
+        _saveAsErrors = [];
+    }
+
+    private void CloseProjectContextMenu()
+    {
+        _isProjectContextMenuOpen = false;
+    }
+
+    private Task SaveProject()
+    {
+        CloseProjectContextMenu();
+        return ExecuteSaveAsync(new TheoryProjectSaveOptions());
+    }
+
+    private void OpenSaveAsDialog()
+    {
+        CloseProjectContextMenu();
+        _saveAsErrors = [];
+        _isSaveAsDialogOpen = true;
+    }
+
+    private void CloseSaveAsDialog()
+    {
+        _isSaveAsDialogOpen = false;
+        _saveAsErrors = [];
+    }
+
+    private Task SaveProjectAs(DocumentTarget target)
+    {
+        return ExecuteSaveAsync(new TheoryProjectSaveOptions(
+            TargetOverride: target,
+            SaveAs: true));
+    }
+
+    private async Task ExecuteSaveAsync(TheoryProjectSaveOptions options)
+    {
+        if (TheoryDocument is null)
+        {
+            return;
+        }
+
+        var result = await SaveUseCase.SaveAsync(TheoryDocument, options);
+        switch (result.Status)
+        {
+            case ProjectSaveStatus.Saved:
+                _isSaveAsDialogOpen = false;
+                _saveAsErrors = [];
+                await OnTheoryDocumentChanged.InvokeAsync(result.Document);
+                ShowToast(BuildSavedMessage(result), isError: false);
+                break;
+
+            case ProjectSaveStatus.RequiresCreateDirectoryConfirmation:
+                _isSaveAsDialogOpen = false;
+                _pendingSave = new PendingSave(options with { AllowCreateDirectory = true });
+                _confirmation = new SaveConfirmation(
+                    "Create folder?",
+                    $"The folder for {result.RelativePath} does not exist. Create it inside the app working directory?",
+                    "Create");
+                break;
+
+            case ProjectSaveStatus.RequiresOverwriteConfirmation:
+                _isSaveAsDialogOpen = false;
+                _pendingSave = new PendingSave(options with { AllowOverwrite = true });
+                _confirmation = new SaveConfirmation(
+                    "Overwrite file?",
+                    BuildOverwriteMessage(result),
+                    "Overwrite");
+                break;
+
+            case ProjectSaveStatus.ValidationFailed:
+                if (options.SaveAs)
+                {
+                    _saveAsErrors = result.Errors;
+                    _isSaveAsDialogOpen = true;
+                }
+                else
+                {
+                    ShowToast(string.Join(" ", result.Errors), isError: true);
+                }
+
+                break;
+        }
+    }
+
+    private async Task ConfirmPendingSave()
+    {
+        if (_pendingSave is not { } pendingSave)
+        {
+            _confirmation = null;
+            return;
+        }
+
+        _pendingSave = null;
+        _confirmation = null;
+        await ExecuteSaveAsync(pendingSave.Options);
+    }
+
+    private void CancelPendingSave()
+    {
+        _pendingSave = null;
+        _confirmation = null;
+        ShowToast("Save canceled.", isError: true);
+    }
+
+    private void ShowToast(string message, bool isError)
+    {
+        var session = ++_toastSession;
+        _toast = new SaveToast(message, isError);
+        _ = ClearToastLaterAsync(session);
+    }
+
+    private async Task ClearToastLaterAsync(int session)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(3.5));
+
+        if (session == _toastSession)
+        {
+            _toast = null;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static string BuildSavedMessage(TheoryProjectSaveResult result)
+    {
+        if (string.IsNullOrWhiteSpace(result.BackupRelativePath))
+        {
+            return $"Saved {result.RelativePath}.";
+        }
+
+        return $"Saved {result.RelativePath}. Backup: {result.BackupRelativePath}.";
+    }
+
+    private static string BuildOverwriteMessage(TheoryProjectSaveResult result)
+    {
+        var lastModified = result.LastModifiedAt is null
+            ? "Last modified time is unavailable."
+            : $"Last modified: {result.LastModifiedAt.Value.ToLocalTime():g}.";
+
+        return $"Overwrite Theory HTML file {result.RelativePath}? {lastModified}";
+    }
+
+    private sealed record SaveConfirmation(
+        string Title,
+        string Message,
+        string ConfirmLabel);
+
+    private sealed record PendingSave(TheoryProjectSaveOptions Options);
+
+    private sealed record SaveToast(string Message, bool IsError);
 }

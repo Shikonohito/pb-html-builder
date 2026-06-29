@@ -1,30 +1,26 @@
 @page "/builder/theory"
+@inject TheoryDocumentFactory DocumentFactory
 
-<BuilderWorkspaceShell DocumentKind="Theory"
-                       DocumentTitle="@ResolvedTitle"
-                       Accent="#4cc9f0"
-                       OutlineLabel="Оглавление"
-                       MapLabel="Разделы темы"
-                       MapTitle="Что важно рассмотреть"
-                       PrimarySectionTitle="Introduction"
-                       SidebarFooter="© Ivan Ivanov, 2026"
-                       OutlineItems="OutlineItems"
-                       CanvasItems="CanvasItems" />
+@if (_document is not null)
+{
+    <BuilderWorkspaceShell DocumentKind="Theory"
+                           DocumentTitle="@_document.DocumentTitle"
+                           Accent="#4cc9f0"
+                           OutlineLabel="Оглавление"
+                           MapLabel="Разделы темы"
+                           MapTitle="Что важно рассмотреть"
+                           PrimarySectionTitle="@PrimarySectionTitle"
+                           SidebarFooter="@_document.Brand.Copyright"
+                           OutlineItems="OutlineItems"
+                           CanvasItems="@CanvasItems"
+                           TheoryDocument="_document"
+                           OnTheoryDocumentChanged="UpdateDocument" />
+}
 
 @code {
     private static readonly string[] OutlineItems =
     [
         "Section map"
-    ];
-
-    private static readonly string[] CanvasItems =
-    [
-        "Заголовок",
-        "Заголовок",
-        "Заголовок",
-        "Заголовок",
-        "Заголовок",
-        "Заголовок"
     ];
 
     [SupplyParameterFromQuery(Name = "title")]
@@ -36,7 +32,21 @@
     [SupplyParameterFromQuery(Name = "fileName")]
     public string? FileName { get; set; }
 
-    private string ResolvedTitle => string.IsNullOrWhiteSpace(Title)
-        ? "Название урока"
-        : Title.Trim();
+    private TheoryDocument? _document;
+
+    private string PrimarySectionTitle => _document?.Sections.FirstOrDefault()?.Title ?? "Introduction";
+
+    private IReadOnlyList<string> CanvasItems => _document?.SectionMapCells
+        .Select(cell => cell.Title)
+        .ToArray() ?? [];
+
+    protected override void OnParametersSet()
+    {
+        _document ??= DocumentFactory.CreateNew(new TheoryDocumentCreateRequest(FolderPath, FileName, Title));
+    }
+
+    private void UpdateDocument(TheoryDocument document)
+    {
+        _document = document;
+    }
 }

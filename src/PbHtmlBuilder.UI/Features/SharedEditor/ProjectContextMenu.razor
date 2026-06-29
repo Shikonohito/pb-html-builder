@@ -1,1 +1,52 @@
-@* Structure placeholder. *@
+<div class="project-menu-dismiss-layer" role="presentation" @onclick="OnClose"></div>
+
+<div class="project-context-menu"
+     style="@MenuStyle"
+     role="menu"
+     aria-label="Project commands"
+     @onclick:stopPropagation="true">
+    <div class="project-menu-branch" tabindex="0">
+        <button class="project-menu-item" type="button" role="menuitem" aria-haspopup="true">
+            <span>Project</span>
+            <span aria-hidden="true">›</span>
+        </button>
+
+        <div class="project-context-submenu" role="menu" aria-label="Project">
+            <button class="project-menu-item" type="button" role="menuitem" @onclick="Save">
+                Save
+            </button>
+            <button class="project-menu-item" type="button" role="menuitem" @onclick="SaveAs">
+                Save as...
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public double X { get; set; }
+
+    [Parameter]
+    public double Y { get; set; }
+
+    [Parameter]
+    public EventCallback OnSave { get; set; }
+
+    [Parameter]
+    public EventCallback OnSaveAs { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private string MenuStyle => $"left: {X}px; top: {Y}px;";
+
+    private Task Save()
+    {
+        return OnSave.InvokeAsync();
+    }
+
+    private Task SaveAs()
+    {
+        return OnSaveAs.InvokeAsync();
+    }
+}

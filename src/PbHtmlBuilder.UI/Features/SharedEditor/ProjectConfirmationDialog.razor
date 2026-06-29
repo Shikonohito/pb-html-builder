@@ -1,0 +1,32 @@
+<div class="project-dialog-backdrop" role="presentation" @onclick="OnCancel">
+    <div class="project-dialog compact" role="dialog" aria-modal="true" aria-labelledby="projectConfirmTitle" @onclick:stopPropagation="true">
+        <div class="project-dialog-head">
+            <h3 id="projectConfirmTitle">@Title</h3>
+            <button class="project-dialog-icon-button" type="button" title="Close" aria-label="Close" @onclick="OnCancel">×</button>
+        </div>
+
+        <p class="project-confirm-message">@Message</p>
+
+        <div class="project-dialog-actions">
+            <button class="project-primary-button" type="button" @onclick="OnConfirm">@ConfirmLabel</button>
+            <button class="project-secondary-button" type="button" @onclick="OnCancel">Cancel</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public required string Title { get; set; }
+
+    [Parameter, EditorRequired]
+    public required string Message { get; set; }
+
+    [Parameter, EditorRequired]
+    public required string ConfirmLabel { get; set; }
+
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+}
