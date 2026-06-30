@@ -1,4 +1,5 @@
 @inject NavigationManager Navigation
+@inject IProjectFolderBrowser FolderBrowser
 
 <div class="create-document" style="@($"--action-accent: {Action.Accent}")">
     <div class="create-document-head">
@@ -14,7 +15,7 @@
                        name="folderPath"
                        type="text"
                        autocomplete="off"
-                       placeholder="@Action.FolderPathPlaceholder"
+                       placeholder="@_folderPathPlaceholder"
                        value="@FolderPath"
                        @oninput="HandleFolderPathInput" />
                 <button class="folder-picker-button"
@@ -74,10 +75,26 @@
 
     private string _fileName = "";
     private string _documentTitle = "";
+    private string _folderPathPlaceholder = "";
+
+    protected override void OnParametersSet()
+    {
+        _folderPathPlaceholder = ResolveFolderPathPlaceholder();
+    }
 
     private Task HandleFolderPathInput(ChangeEventArgs args)
     {
         return FolderPathChanged.InvokeAsync(args.Value?.ToString() ?? "");
+    }
+
+    private string ResolveFolderPathPlaceholder()
+    {
+        if (string.IsNullOrWhiteSpace(Action.FolderPathPlaceholder))
+        {
+            return Action.FolderPathPlaceholder;
+        }
+
+        return FolderBrowser.Browse(Action.FolderPathPlaceholder).RequestedDisplayPath;
     }
 
     private void HandleCreate()
