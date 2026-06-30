@@ -271,7 +271,6 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
         .builder-topic-title span,
         .builder-section-map span {
           display: block;
-          margin-bottom: 4px;
           color: var(--builder-accent);
           font-size: 0.75rem;
           font-weight: 800;
@@ -290,6 +289,7 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
         .builder-topic-title h1 {
           overflow: hidden;
           font-size: clamp(1.32rem, 2.4vw, 2.35rem);
+          line-height: 1.28;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
