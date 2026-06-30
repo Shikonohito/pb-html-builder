@@ -64,7 +64,7 @@ button {
   border: 1px solid color-mix(in srgb, var(--start-line) 86%, transparent);
   border-radius: 8px;
   background: color-mix(in srgb, var(--start-surface) 92%, transparent);
-  box-shadow: var(--start-shadow);
+  box-shadow: var(--builder-shadow-default);
   backdrop-filter: blur(18px);
 }
 
@@ -131,7 +131,6 @@ button {
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
     inset 0 -12px 18px rgba(0, 0, 0, 0.16),
     0 1px 0 rgba(255, 255, 255, 0.06),
-    0 16px 26px rgba(0, 0, 0, 0.26),
     0 0 18px -10px color-mix(in srgb, var(--action-accent) 72%, transparent);
   color: var(--action-accent);
   cursor: pointer;

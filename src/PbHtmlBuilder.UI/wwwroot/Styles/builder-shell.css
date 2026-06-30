@@ -1,5 +1,5 @@
 :root {
-  --builder-shadow-default: 25px 25px 10px rgba(0, 0, 0, 0.24);
+  --builder-shadow-default: 20px 20px 10px rgba(0, 0, 0, 0.24);
 }
 
 .builder-workspace {
@@ -271,7 +271,7 @@
   border: 1px solid #3b414c;
   border-radius: 8px;
   background: #191d24;
-  box-shadow: var(--builder-shadow-default);
+  box-shadow: 20px 10px 10px rgba(0, 0, 0, 0.24);
   color: var(--builder-text);
   cursor: pointer;
   overflow-wrap: break-word;
