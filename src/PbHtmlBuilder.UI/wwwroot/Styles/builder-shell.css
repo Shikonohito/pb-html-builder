@@ -748,21 +748,40 @@
 .filesystem-entry-list {
   display: grid;
   align-content: start;
-  gap: 6px;
   min-height: 260px;
   max-height: min(360px, 42vh);
-  overflow: auto;
+  overflow: hidden auto;
+  scrollbar-color: color-mix(in srgb, var(--filesystem-muted) 34%, transparent) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+.filesystem-entry-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filesystem-entry-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filesystem-entry-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--filesystem-muted) 34%, transparent);
+}
+
+.filesystem-entry-list::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--filesystem-muted) 52%, transparent);
 }
 
 .filesystem-entry {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: 28px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   min-height: 38px;
   padding: 7px 10px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 5px;
   background: transparent;
   color: var(--filesystem-muted);
   cursor: pointer;
@@ -788,16 +807,8 @@
   overflow: hidden;
   color: inherit;
   font-size: 0.9rem;
-  font-weight: 760;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.filesystem-entry-kind {
-  color: color-mix(in srgb, var(--filesystem-muted) 68%, transparent);
-  font-size: 0.72rem;
-  font-weight: 850;
-  text-transform: uppercase;
 }
 
 .filesystem-empty {

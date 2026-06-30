@@ -8,8 +8,19 @@
                 aria-label="Up"
                 disabled="@(_browse?.ParentPath is null)"
                 @onclick="NavigateUp">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m18 15-6-6-6 6" />
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="24"
+                 height="24"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round"
+                 class="lucide lucide-arrow-up-icon lucide-arrow-up"
+                 aria-hidden="true">
+                <path d="m5 12 7-7 7 7" />
+                <path d="M12 19V5" />
             </svg>
         </button>
         <button class="filesystem-tool-button"
@@ -68,45 +79,40 @@
         {
             <div class="filesystem-empty">No folder loaded</div>
         }
-        else if (_browse.Entries.Count == 0)
-        {
-            <div class="filesystem-empty">This folder is empty</div>
-        }
         else
         {
-            @foreach (var entry in _browse.Entries)
-            {
-                var isDirectory = entry.Kind == FolderBrowseEntryKind.Directory;
-                var isEnabled = entry.IsAccessible && (isDirectory || AllowFileSelection);
-                var isSelected = isDirectory && IsSelected(entry.SelectionPath);
+            var directoryEntries = _browse.Entries
+                .Where(entry => entry.Kind == FolderBrowseEntryKind.Directory)
+                .ToArray();
 
-                <button @key="entry.FullPath"
-                        class="filesystem-entry @(isDirectory ? "is-directory" : "is-file") @(isSelected ? "is-selected" : "")"
-                        type="button"
-                        role="option"
-                        aria-selected="@isSelected"
-                        aria-disabled="@(!isEnabled)"
-                        disabled="@(!isEnabled)"
-                        title="@entry.FullPath"
-                        @onclick="() => SelectEntry(entry)">
-                    <span class="filesystem-entry-icon" aria-hidden="true">
-                        @if (isDirectory)
-                        {
+            if (directoryEntries.Length == 0)
+            {
+                <div class="filesystem-empty">No folders found</div>
+            }
+            else
+            {
+                @foreach (var entry in directoryEntries)
+                {
+                    var isEnabled = entry.IsAccessible;
+                    var isSelected = IsSelected(entry.SelectionPath);
+
+                    <button @key="entry.FullPath"
+                            class="filesystem-entry is-directory @(isSelected ? "is-selected" : "")"
+                            type="button"
+                            role="option"
+                            aria-selected="@isSelected"
+                            aria-disabled="@(!isEnabled)"
+                            disabled="@(!isEnabled)"
+                            title="@entry.FullPath"
+                            @onclick="() => SelectEntry(entry)">
+                        <span class="filesystem-entry-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24">
                                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                             </svg>
-                        }
-                        else
-                        {
-                            <svg viewBox="0 0 24 24">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                <path d="M14 2v6h6" />
-                            </svg>
-                        }
-                    </span>
-                    <span class="filesystem-entry-name">@entry.Name</span>
-                    <span class="filesystem-entry-kind">@(isDirectory ? "Folder" : "File")</span>
-                </button>
+                        </span>
+                        <span class="filesystem-entry-name">@entry.Name</span>
+                    </button>
+                }
             }
         }
     </div>

@@ -436,10 +436,21 @@ input:focus-visible {
 }
 
 .dialog-icon-button {
+  display: inline-grid;
   width: 36px;
   height: 36px;
+  place-items: center;
   color: var(--start-muted);
-  font-size: 1.2rem;
+}
+
+.dialog-icon-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .dialog-icon-button:hover {
