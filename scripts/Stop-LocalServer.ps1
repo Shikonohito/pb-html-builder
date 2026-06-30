@@ -41,9 +41,18 @@ function Get-ScriptDirectory {
 }
 
 function Write-Status {
-    param([string]$Message)
+    param(
+        [string]$Message,
+        [ValidateSet('INFO', 'SUCCESS')]
+        [string]$Level = 'INFO'
+    )
 
-    [Console]::Out.WriteLine($Message)
+    [Console]::Out.WriteLine("[$Level] $Message")
+    [Console]::Out.Flush()
+}
+
+function Write-BlankLine {
+    [Console]::Out.WriteLine()
     [Console]::Out.Flush()
 }
 
@@ -150,11 +159,42 @@ function Get-ProcessCommandLine {
     }
 }
 
+function Get-ParentProcessId {
+    param([int]$ProcessId)
+
+    try {
+        $process = Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction Stop
+        if ($null -eq $process) {
+            return $null
+        }
+
+        return [int]$process.ParentProcessId
+    }
+    catch {
+        return $null
+    }
+}
+
+function Get-ChildProcessIds {
+    param([int]$ProcessId)
+
+    try {
+        return @(Get-CimInstance Win32_Process -Filter "ParentProcessId = $ProcessId" -ErrorAction Stop |
+            Select-Object -ExpandProperty ProcessId |
+            ForEach-Object { [int]$_ } |
+            Where-Object { $_ -gt 0 })
+    }
+    catch {
+        return @()
+    }
+}
+
 function Test-ExpectedServerProcess {
     param(
         [string]$CommandLine,
         [string]$ProjectPath,
         [string]$ProjectDirectory,
+        [string]$RepoRoot,
         [bool]$IsStateProcess
     )
 
@@ -169,6 +209,13 @@ function Test-ExpectedServerProcess {
     $normalizedCommandLine = $CommandLine.ToLowerInvariant()
     $normalizedProjectPath = $ProjectPath.ToLowerInvariant()
     $normalizedProjectDirectory = $ProjectDirectory.ToLowerInvariant()
+
+    if ($IsStateProcess -and -not [string]::IsNullOrWhiteSpace($RepoRoot)) {
+        $normalizedRepoRoot = $RepoRoot.ToLowerInvariant()
+        if ($normalizedCommandLine.Contains($normalizedRepoRoot)) {
+            return $true
+        }
+    }
 
     return (
         $normalizedCommandLine.Contains($normalizedProjectPath) -or
@@ -207,6 +254,7 @@ function Get-TargetProcessDescription {
                 'state:start' { 'launcher process saved as StartProcessId'; break }
                 'state' { 'saved server process from state file'; break }
                 'port:*' { "process listening on port $Port"; break }
+                'tree:*' { "descendant of $($_.Substring(5))"; break }
                 default { "source: $_" }
             }
         })
@@ -240,6 +288,47 @@ function Add-TargetProcess {
     }
 
     $Targets[$ProcessId].Add($Source)
+}
+
+function Add-TargetProcessTree {
+    param(
+        [hashtable]$Targets,
+        [int]$RootProcessId,
+        [string]$RootSource,
+        [System.Collections.Generic.HashSet[int]]$Visited
+    )
+
+    if ($RootProcessId -le 0 -or -not $Visited.Add($RootProcessId)) {
+        return
+    }
+
+    foreach ($childProcessId in @(Get-ChildProcessIds -ProcessId $RootProcessId)) {
+        Add-TargetProcess -Targets $Targets -ProcessId $childProcessId -Source "tree:${RootProcessId}:$RootSource"
+        Add-TargetProcessTree -Targets $Targets -RootProcessId $childProcessId -RootSource $RootSource -Visited $Visited
+    }
+}
+
+function Get-TargetProcessDepth {
+    param(
+        [int]$ProcessId,
+        [hashtable]$Targets
+    )
+
+    $depth = 0
+    $currentProcessId = $ProcessId
+    $visited = [System.Collections.Generic.HashSet[int]]::new()
+
+    while ($visited.Add($currentProcessId)) {
+        $parentProcessId = Get-ParentProcessId -ProcessId $currentProcessId
+        if ($null -eq $parentProcessId -or -not $Targets.ContainsKey([int]$parentProcessId)) {
+            break
+        }
+
+        $depth += 1
+        $currentProcessId = [int]$parentProcessId
+    }
+
+    return $depth
 }
 
 $scriptDirectory = Get-ScriptDirectory
@@ -288,20 +377,52 @@ if ($targets.Count -eq 0) {
     exit 0
 }
 
+$rootTargets = @($targets.GetEnumerator() | ForEach-Object {
+        [pscustomobject]@{
+            ProcessId = [int]$_.Key
+            Sources = @($_.Value)
+        }
+    })
+$treeVisited = [System.Collections.Generic.HashSet[int]]::new()
+foreach ($target in $rootTargets) {
+    $process = Get-Process -Id $target.ProcessId -ErrorAction SilentlyContinue
+    if (-not $process) {
+        continue
+    }
+
+    $sources = @($target.Sources)
+    $isStateProcess = @($sources | Where-Object { $_ -like 'state*' }).Count -gt 0
+    $commandLine = Get-ProcessCommandLine -ProcessId $target.ProcessId
+    $isExpected = Test-ExpectedServerProcess -CommandLine $commandLine -ProjectPath $projectPath -ProjectDirectory $projectDirectory -RepoRoot $repoRoot -IsStateProcess $isStateProcess
+
+    if ($isExpected) {
+        Add-TargetProcessTree -Targets $targets -RootProcessId $target.ProcessId -RootSource ($sources -join ',') -Visited $treeVisited
+    }
+}
+
 $stoppedAny = $false
 $liveTargetFound = $false
-foreach ($entry in $targets.GetEnumerator()) {
-    $processId = [int]$entry.Key
+$targetEntries = @($targets.GetEnumerator() | ForEach-Object {
+        [pscustomobject]@{
+            ProcessId = [int]$_.Key
+            Sources = @($_.Value)
+            Depth = Get-TargetProcessDepth -ProcessId ([int]$_.Key) -Targets $targets
+        }
+    } | Sort-Object -Property @{ Expression = 'Depth'; Descending = $true }, ProcessId)
+
+foreach ($entry in $targetEntries) {
+    $processId = [int]$entry.ProcessId
     $process = Get-Process -Id $processId -ErrorAction SilentlyContinue
     if (-not $process) {
         continue
     }
 
     $liveTargetFound = $true
-    $sources = @($entry.Value)
+    $sources = @($entry.Sources)
     $isStateProcess = @($sources | Where-Object { $_ -like 'state*' }).Count -gt 0
+    $isTreeProcess = @($sources | Where-Object { $_ -like 'tree:*' }).Count -gt 0
     $commandLine = Get-ProcessCommandLine -ProcessId $processId
-    $isExpected = Test-ExpectedServerProcess -CommandLine $commandLine -ProjectPath $projectPath -ProjectDirectory $projectDirectory -IsStateProcess $isStateProcess
+    $isExpected = $isTreeProcess -or (Test-ExpectedServerProcess -CommandLine $commandLine -ProjectPath $projectPath -ProjectDirectory $projectDirectory -RepoRoot $repoRoot -IsStateProcess $isStateProcess)
 
     if (-not $isExpected) {
         Write-Warning "Skipping PID $processId because it does not look like this project's server. Use -Force to stop it anyway."
@@ -334,6 +455,10 @@ foreach ($entry in $targets.GetEnumerator()) {
     if (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
         Write-Warning "PID $processId is still running after $TimeoutSeconds seconds."
     }
+    else {
+        Write-Status "PID $processId stopped." -Level 'SUCCESS'
+        Write-BlankLine
+    }
 }
 
 Remove-Item -LiteralPath $stateFile -Force -ErrorAction SilentlyContinue
@@ -344,7 +469,7 @@ if (-not $liveTargetFound) {
 }
 
 if ($stoppedAny) {
-    Write-Status "Local server stopped for $Url."
+    Write-Status "Local server stopped for $Url." -Level 'SUCCESS'
     exit 0
 }
 

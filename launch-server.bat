@@ -34,6 +34,7 @@ $startStdoutLog = Join-Path $logsDirectory 'launch-server-start.out.log'
 $startStderrLog = Join-Path $logsDirectory 'launch-server-start.err.log'
 $watchdogScript = Join-Path $tempDirectory 'launch-server-watchdog.ps1'
 $powerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+$separatorLine = '========================================================================================='
 
 if (-not (Test-Path -LiteralPath $powerShell)) {
     $powerShell = 'powershell.exe'
@@ -106,12 +107,33 @@ function Get-ConfiguredLocalUrl {
 $url = Get-ConfiguredLocalUrl -ProjectDirectory $projectDirectory
 
 function Add-LauncherLog {
-    param([string]$Message)
+    param(
+        [string]$Message,
+        [ValidateSet('INFO', 'SUCCESS')]
+        [string]$Level = 'INFO',
+        [switch]$Raw
+    )
+
+    $displayMessage = $Message
+    if (-not $Raw) {
+        $displayMessage = "[$Level] $Message"
+    }
 
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $line = "[$timestamp] $Message"
+    $line = "[$timestamp] $displayMessage"
     Add-Content -LiteralPath $launcherLog -Value $line
-    Write-Host $Message
+    Write-Host $displayMessage
+}
+
+function Add-LauncherBlankLine {
+    Add-Content -LiteralPath $launcherLog -Value ''
+    Write-Host ''
+}
+
+function Add-LauncherSeparator {
+    Add-LauncherBlankLine
+    Add-LauncherLog -Message $separatorLine -Raw
+    Add-LauncherBlankLine
 }
 
 function Invoke-LoggedPowerShell {
@@ -330,9 +352,11 @@ try {
 
     $serverStarted = $true
 
-    Add-LauncherLog "Local server is ready: $url"
-    Add-LauncherLog 'Type Y and press Enter to stop it.'
-    Add-LauncherLog 'Closing this console window also stops the local server.'
+    Add-LauncherSeparator
+    Add-LauncherLog "Local server is ready: $url" -Level 'SUCCESS'
+    Add-LauncherBlankLine
+    Add-LauncherLog 'Type Y and press Enter to stop it.' -Raw
+    Add-LauncherLog 'Closing this console window also stops the local server.' -Raw
 
     while ($true) {
         Write-Host -NoNewline 'Stop server? [Y] '
@@ -354,7 +378,9 @@ finally {
     }
 
     if ($serverStarted) {
+        Add-LauncherSeparator
         Add-LauncherLog 'Stopping local server.'
+        Add-LauncherBlankLine
         $stoppedStartHelper = $false
 
         if ($null -ne $startProcess -and -not $startProcess.HasExited) {
