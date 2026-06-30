@@ -216,9 +216,7 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           min-height: 100vh;
           grid-template-columns: var(--builder-sidebar-width) minmax(0, 1fr);
           grid-template-rows: var(--builder-header-height) minmax(0, 1fr);
-          background:
-            linear-gradient(140deg, color-mix(in srgb, var(--builder-bg) 88%, white), var(--builder-bg)),
-            var(--builder-bg);
+          background: linear-gradient(135deg, color-mix(in srgb, #111318 88%, white), #111318);
           color: var(--builder-text);
           transition: grid-template-columns 180ms ease;
         }
@@ -429,7 +427,7 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
         .builder-main {
           display: grid;
           align-content: start;
-          gap: 22px;
+          gap: 38px;
           box-sizing: border-box;
           width: 100%;
           max-width: 1250px;
@@ -466,6 +464,7 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           border: 1px solid #3b414c;
           border-radius: 8px;
           background: #191d24;
+          box-shadow: 25px 25px 10px rgba(0, 0, 0, 0.24);
           color: var(--builder-text);
           cursor: pointer;
           overflow-wrap: break-word;
@@ -473,14 +472,12 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           font-weight: 800;
           transition:
             border-color 160ms ease,
-            background 160ms ease,
-            transform 160ms ease;
+            background 160ms ease;
         }
 
         .builder-section-map-grid a:hover {
           border-color: var(--builder-accent);
           background: color-mix(in srgb, var(--builder-accent) 16%, #191d24);
-          transform: translateY(-1px);
         }
 
         .builder-section-skeleton {
@@ -495,7 +492,7 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           border: 1px solid var(--builder-line);
           border-radius: 8px;
           background: color-mix(in srgb, var(--builder-surface-strong) 94%, transparent);
-          box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+          box-shadow: 25px 25px 10px rgba(0, 0, 0, 0.24);
           scroll-margin-top: calc(var(--builder-header-height) + 24px);
         }
 
