@@ -19,6 +19,7 @@
             <FileSystemPicker CurrentPath="@PickerPath"
                               DefaultPath="projects/theory"
                               AllowFileSelection="true"
+                              OpenFoldersOnDoubleClick="true"
                               OnFolderSelected="SelectFolder"
                               OnFileSelected="SelectFile" />
 
@@ -54,12 +55,13 @@
     public EventCallback OnClose { get; set; }
 
     private string _folderPath = "";
+    private string _pickerPath = "";
     private string _fileName = "";
     private bool _initialized;
 
-    private string PickerPath => string.IsNullOrWhiteSpace(_folderPath)
+    private string PickerPath => string.IsNullOrWhiteSpace(_pickerPath)
         ? "projects/theory"
-        : _folderPath;
+        : _pickerPath;
 
     protected override void OnParametersSet()
     {
@@ -69,6 +71,7 @@
         }
 
         _folderPath = CurrentTarget.FolderPath;
+        _pickerPath = _folderPath;
         _fileName = CurrentTarget.FileName;
         _initialized = true;
     }

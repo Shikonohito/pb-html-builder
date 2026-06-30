@@ -104,7 +104,8 @@
                             aria-disabled="@(!isEnabled)"
                             disabled="@(!isEnabled)"
                             title="@entry.FullPath"
-                            @onclick="() => SelectEntry(entry)">
+                            @onclick="args => SelectEntry(entry, args)"
+                            @ondblclick="args => OpenEntry(entry, args)">
                         <span class="filesystem-entry-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24">
                                 <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -129,24 +130,29 @@
     public bool AllowFileSelection { get; set; }
 
     [Parameter]
+    public bool OpenFoldersOnDoubleClick { get; set; }
+
+    [Parameter]
     public EventCallback<string> OnFolderSelected { get; set; }
 
     [Parameter]
     public EventCallback<FolderBrowseEntry> OnFileSelected { get; set; }
 
     private FolderBrowseResponse? _browse;
-    private string _loadedPath = "";
+    private string? _lastParameterPath;
     private string _selectedFolderPath = "";
+    private const long PrimaryMouseButton = 0;
 
     protected override async Task OnParametersSetAsync()
     {
         var requestedPath = ResolveRequestedPath();
         if (_browse is not null
-            && string.Equals(_loadedPath, requestedPath, StringComparison.OrdinalIgnoreCase))
+            && string.Equals(_lastParameterPath, requestedPath, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
+        _lastParameterPath = requestedPath;
         await BrowseToAsync(requestedPath);
     }
 
@@ -159,21 +165,29 @@
     {
         var requestedPath = string.IsNullOrWhiteSpace(path) ? DefaultPath : path;
         _browse = FolderBrowser.Browse(requestedPath);
-        _loadedPath = requestedPath;
         _selectedFolderPath = _browse.RequestedSelectionPath;
         await OnFolderSelected.InvokeAsync(_browse.RequestedSelectionPath);
     }
 
-    private async Task SelectEntry(FolderBrowseEntry entry)
+    private async Task SelectEntry(FolderBrowseEntry entry, MouseEventArgs args)
     {
-        if (!entry.IsAccessible)
+        if (!entry.IsAccessible || !IsPrimaryMouseButton(args))
         {
             return;
         }
 
         if (entry.Kind == FolderBrowseEntryKind.Directory)
         {
-            await BrowseToAsync(entry.FullPath);
+            if (OpenFoldersOnDoubleClick)
+            {
+                _selectedFolderPath = entry.SelectionPath;
+                await OnFolderSelected.InvokeAsync(entry.SelectionPath);
+            }
+            else
+            {
+                await BrowseToAsync(entry.FullPath);
+            }
+
             return;
         }
 
@@ -182,6 +196,19 @@
             _selectedFolderPath = entry.SelectionPath;
             await OnFileSelected.InvokeAsync(entry);
         }
+    }
+
+    private async Task OpenEntry(FolderBrowseEntry entry, MouseEventArgs args)
+    {
+        if (!OpenFoldersOnDoubleClick
+            || !entry.IsAccessible
+            || entry.Kind != FolderBrowseEntryKind.Directory
+            || !IsPrimaryMouseButton(args))
+        {
+            return;
+        }
+
+        await BrowseToAsync(entry.FullPath);
     }
 
     private async Task NavigateUp()
@@ -208,5 +235,10 @@
             path,
             _selectedFolderPath,
             StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPrimaryMouseButton(MouseEventArgs args)
+    {
+        return args.Button == PrimaryMouseButton;
     }
 }
