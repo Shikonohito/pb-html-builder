@@ -16,23 +16,13 @@
         }
 
         <form class="project-dialog-form" @onsubmit="Submit" @onsubmit:preventDefault="true">
-            <label class="builder-field-group" for="saveAsFolderPath">
-                <span>Save path</span>
-                <input id="saveAsFolderPath"
-                       type="text"
-                       autocomplete="off"
-                       placeholder="projects/theory"
-                       @bind="_folderPath"
-                       @bind:event="oninput" />
-            </label>
-
             <FileSystemPicker CurrentPath="@PickerPath"
                               DefaultPath="projects/theory"
                               AllowFileSelection="true"
                               OnFolderSelected="SelectFolder"
                               OnFileSelected="SelectFile" />
 
-            <label class="builder-field-group" for="saveAsFileName">
+            <label for="saveAsFileName">
                 <span>File name</span>
                 <input id="saveAsFileName"
                        type="text"

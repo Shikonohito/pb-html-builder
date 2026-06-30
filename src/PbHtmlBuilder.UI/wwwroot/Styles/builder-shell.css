@@ -481,18 +481,18 @@
 }
 
 .project-dialog-form,
-.builder-field-group {
+.project-dialog-form > label {
   display: grid;
   gap: 12px;
 }
 
-.builder-field-group {
+.project-dialog-form > label {
   color: #c2c5c9;
   font-size: 0.86rem;
   font-weight: 800;
 }
 
-.builder-field-group input {
+.project-dialog-form > label input {
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
@@ -503,7 +503,7 @@
   font: inherit;
 }
 
-.builder-field-group input:focus {
+.project-dialog-form > label input:focus {
   outline: 2px solid color-mix(in srgb, #4cc9f0 70%, transparent);
   outline-offset: 2px;
 }
