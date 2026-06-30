@@ -114,7 +114,7 @@
 
 @if (_toast is not null)
 {
-    <div class="builder-save-toast @(_toast.IsError ? "is-error" : "is-success")" role="status">
+    <div @key="_toastSession" class="builder-save-toast @(_toast.IsError ? "is-error" : "is-success")" role="status">
         @_toast.Message
     </div>
 }

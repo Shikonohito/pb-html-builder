@@ -584,8 +584,9 @@
 .builder-save-toast {
   position: fixed;
   z-index: 130;
-  right: 24px;
-  bottom: 24px;
+  top: 28px;
+  left: 50%;
+  width: max-content;
   max-width: min(420px, calc(100vw - 48px));
   padding: 12px 14px;
   border: 1px solid #3b414c;
@@ -596,6 +597,29 @@
   font-size: 0.9rem;
   font-weight: 800;
   line-height: 1.4;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, -24px);
+  animation: builder-save-toast-lifecycle 2.8s ease-in-out both;
+}
+
+@keyframes builder-save-toast-lifecycle {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -24px);
+  }
+
+  8%,
+  88% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -16px);
+  }
 }
 
 .project-dialog.is-save-as {
