@@ -372,6 +372,15 @@
   position: relative;
 }
 
+.project-menu-branch::after {
+  position: absolute;
+  top: -7px;
+  left: 100%;
+  width: 6px;
+  height: calc(100% + 14px);
+  content: "";
+}
+
 .project-context-submenu {
   position: absolute;
   top: -7px;
@@ -379,6 +388,7 @@
   display: none;
 }
 
+.project-menu-branch.is-open .project-context-submenu,
 .project-menu-branch:hover .project-context-submenu,
 .project-menu-branch:focus-within .project-context-submenu {
   display: grid;

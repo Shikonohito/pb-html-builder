@@ -5,8 +5,16 @@
      role="menu"
      aria-label="Project commands"
      @onclick:stopPropagation="true">
-    <div class="project-menu-branch" tabindex="0">
-        <button class="project-menu-item" type="button" role="menuitem" aria-haspopup="true">
+    <div class="@ProjectMenuBranchClass"
+         tabindex="0"
+         @onmouseenter="OpenProjectSubmenu"
+         @onmouseover="OpenProjectSubmenu"
+         @onfocusin="OpenProjectSubmenu">
+        <button class="project-menu-item"
+                type="button"
+                role="menuitem"
+                aria-haspopup="true"
+                aria-expanded="@ProjectSubmenuExpanded">
             <span>Project</span>
             <span aria-hidden="true">›</span>
         </button>
@@ -38,7 +46,20 @@
     [Parameter]
     public EventCallback OnClose { get; set; }
 
+    private bool _isProjectSubmenuOpen;
+
     private string MenuStyle => $"left: {X}px; top: {Y}px;";
+
+    private string ProjectMenuBranchClass => _isProjectSubmenuOpen
+        ? "project-menu-branch is-open"
+        : "project-menu-branch";
+
+    private string ProjectSubmenuExpanded => _isProjectSubmenuOpen.ToString().ToLowerInvariant();
+
+    private void OpenProjectSubmenu()
+    {
+        _isProjectSubmenuOpen = true;
+    }
 
     private Task Save()
     {
