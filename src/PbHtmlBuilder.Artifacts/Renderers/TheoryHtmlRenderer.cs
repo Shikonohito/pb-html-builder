@@ -486,16 +486,16 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
         .builder-section-skeleton {
           display: grid;
           min-width: 0;
-          gap: 14px;
-          padding: 24px;
-          border: 1px solid var(--builder-line);
-          border-radius: 8px;
-          background: color-mix(in srgb, var(--builder-surface-strong) 94%, transparent);
-          box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+          gap: 50px;
         }
 
         .builder-section {
           min-width: 0;
+          padding: clamp(18px, 3vw, 32px);
+          border: 1px solid var(--builder-line);
+          border-radius: 8px;
+          background: color-mix(in srgb, var(--builder-surface-strong) 94%, transparent);
+          box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
           scroll-margin-top: calc(var(--builder-header-height) + 24px);
         }
 
@@ -546,10 +546,5 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           }
         }
 
-        @media (max-width: 560px) {
-          .builder-section-skeleton {
-            padding: 18px;
-          }
-        }
         """;
 }
