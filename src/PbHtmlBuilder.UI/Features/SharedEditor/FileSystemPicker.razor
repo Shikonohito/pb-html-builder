@@ -59,8 +59,26 @@
 
     <div class="filesystem-path-stack" aria-live="polite">
         <div>
-            <span>Current</span>
-            <code>@(_browse?.CurrentDisplayPath ?? DefaultPath)</code>
+            <span id="@_currentPathLabelId">Current</span>
+            <span class="filesystem-path-input-row">
+                <input class="filesystem-current-input"
+                       type="text"
+                       autocomplete="off"
+                       aria-labelledby="@_currentPathLabelId"
+                       value="@_currentPathInput"
+                       @oninput="HandleCurrentPathInput"
+                       @onchange="BrowseCurrentPathInput" />
+                <button class="filesystem-path-button"
+                        type="button"
+                        title="Open path"
+                        aria-label="Open path"
+                        @onclick="BrowseCurrentPathInput">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M5 12h14" />
+                        <path d="m12 5 7 7-7 7" />
+                    </svg>
+                </button>
+            </span>
         </div>
     </div>
 
@@ -141,6 +159,8 @@
     private FolderBrowseResponse? _browse;
     private string? _lastParameterPath;
     private string _selectedFolderPath = "";
+    private string _currentPathInput = "";
+    private readonly string _currentPathLabelId = $"filesystemCurrentPath_{Guid.NewGuid():N}";
     private const long PrimaryMouseButton = 0;
 
     protected override async Task OnParametersSetAsync()
@@ -165,8 +185,28 @@
     {
         var requestedPath = string.IsNullOrWhiteSpace(path) ? DefaultPath : path;
         _browse = FolderBrowser.Browse(requestedPath);
+        _currentPathInput = _browse.RequestedDisplayPath;
         _selectedFolderPath = _browse.RequestedSelectionPath;
         await OnFolderSelected.InvokeAsync(_browse.RequestedSelectionPath);
+    }
+
+    private async Task HandleCurrentPathInput(ChangeEventArgs args)
+    {
+        _currentPathInput = args.Value?.ToString() ?? "";
+        _selectedFolderPath = ResolveCurrentPathInput();
+        await OnFolderSelected.InvokeAsync(_selectedFolderPath);
+    }
+
+    private Task BrowseCurrentPathInput()
+    {
+        return BrowseToAsync(ResolveCurrentPathInput());
+    }
+
+    private string ResolveCurrentPathInput()
+    {
+        return string.IsNullOrWhiteSpace(_currentPathInput)
+            ? DefaultPath
+            : _currentPathInput.Trim();
     }
 
     private async Task SelectEntry(FolderBrowseEntry entry, MouseEventArgs args)

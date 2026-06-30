@@ -680,12 +680,15 @@
 }
 
 .filesystem-tool-button:focus-visible,
+.filesystem-path-button:focus-visible,
+.filesystem-current-input:focus-visible,
 .filesystem-entry:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--filesystem-accent) 72%, transparent);
   outline-offset: 2px;
 }
 
 .filesystem-tool-button svg,
+.filesystem-path-button svg,
 .filesystem-entry-icon svg {
   width: 18px;
   height: 18px;
@@ -716,18 +719,43 @@
   text-transform: uppercase;
 }
 
-.filesystem-path-stack code {
-  overflow: hidden;
+.filesystem-path-input-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 8px;
+}
+
+.filesystem-current-input,
+.filesystem-path-button {
   min-height: 34px;
-  padding: 8px 10px;
   border: 1px solid var(--filesystem-line);
   border-radius: 8px;
   background: var(--filesystem-bg);
   color: var(--filesystem-text);
+}
+
+.filesystem-current-input {
+  overflow: hidden;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
   font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.82rem;
   line-height: 1.35;
-  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+}
+
+.filesystem-path-button {
+  display: inline-grid;
+  width: 38px;
+  place-items: center;
+  cursor: pointer;
+}
+
+.filesystem-path-button:hover {
+  border-color: var(--filesystem-accent);
+  background: color-mix(in srgb, var(--filesystem-accent) 12%, var(--filesystem-surface-strong));
 }
 
 .filesystem-errors {
