@@ -1,10 +1,17 @@
-<div class="project-menu-dismiss-layer" role="presentation" @onclick="OnClose"></div>
+<div class="project-menu-dismiss-layer"
+     role="presentation"
+     @onclick="OnClose"
+     @oncontextmenu="OpenAtPointer"
+     @oncontextmenu:preventDefault="true"></div>
 
 <div class="project-context-menu"
      style="@MenuStyle"
      role="menu"
      aria-label="Project commands"
-     @onclick:stopPropagation="true">
+     @onclick:stopPropagation="true"
+     @oncontextmenu="OpenAtPointer"
+     @oncontextmenu:preventDefault="true"
+     @oncontextmenu:stopPropagation="true">
     <div class="@ProjectMenuBranchClass"
          tabindex="0"
          @onmouseenter="OpenProjectSubmenu"
@@ -44,6 +51,9 @@
     public EventCallback OnSaveAs { get; set; }
 
     [Parameter]
+    public EventCallback<MouseEventArgs> OnOpenAtPointer { get; set; }
+
+    [Parameter]
     public EventCallback OnClose { get; set; }
 
     private bool _isProjectSubmenuOpen;
@@ -59,6 +69,11 @@
     private void OpenProjectSubmenu()
     {
         _isProjectSubmenuOpen = true;
+    }
+
+    private Task OpenAtPointer(MouseEventArgs args)
+    {
+        return OnOpenAtPointer.InvokeAsync(args);
     }
 
     private Task Save()

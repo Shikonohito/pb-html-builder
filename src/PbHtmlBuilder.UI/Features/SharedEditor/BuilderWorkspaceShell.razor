@@ -88,10 +88,12 @@
 
 @if (_isProjectContextMenuOpen)
 {
-    <ProjectContextMenu X="_projectContextMenuX"
+    <ProjectContextMenu @key="_projectContextMenuSession"
+                        X="_projectContextMenuX"
                         Y="_projectContextMenuY"
                         OnSave="SaveProject"
                         OnSaveAs="OpenSaveAsDialog"
+                        OnOpenAtPointer="OpenProjectContextMenu"
                         OnClose="CloseProjectContextMenu" />
 }
 
@@ -181,6 +183,7 @@
     private bool _isProjectContextMenuOpen;
     private double _projectContextMenuX;
     private double _projectContextMenuY;
+    private int _projectContextMenuSession;
     private bool _isSaveAsDialogOpen;
     private IReadOnlyList<string> _saveAsErrors = [];
     private SaveConfirmation? _confirmation;
@@ -222,6 +225,7 @@
 
         _projectContextMenuX = args.ClientX;
         _projectContextMenuY = args.ClientY;
+        _projectContextMenuSession++;
         _isProjectContextMenuOpen = true;
         _saveAsErrors = [];
     }
