@@ -1,5 +1,17 @@
-<div class="folder-dialog-backdrop" style="@($"--action-accent: {ActionAccent};")" role="presentation" @onclick="OnClose">
-    <div class="folder-dialog" role="dialog" aria-modal="true" aria-labelledby="folderDialogTitle" @onclick:stopPropagation="true">
+<div class="folder-dialog-backdrop"
+     style="@($"--action-accent: {ActionAccent};")"
+     role="presentation"
+     @onmousedown="ArmBackdropClose"
+     @onmouseup="CloseFromBackdrop">
+    <div class="folder-dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="folderDialogTitle"
+         @onmousedown="DisarmBackdropClose"
+         @onmousedown:stopPropagation="true"
+         @onmouseup="DisarmBackdropClose"
+         @onmouseup:stopPropagation="true"
+         @onclick:stopPropagation="true">
         <div class="folder-dialog-head">
             <h3 id="folderDialogTitle">Choose folder</h3>
             <button class="dialog-icon-button" type="button" title="Close" aria-label="Close" @onclick="OnClose">
@@ -50,6 +62,9 @@
     public EventCallback OnClose { get; set; }
 
     private string _selectedPath = "";
+    private bool _isBackdropCloseArmed;
+
+    private const long PrimaryMouseButton = 0;
 
     private string InitialPickerPath => string.IsNullOrWhiteSpace(CurrentPath)
         ? FolderPathPlaceholder
@@ -63,6 +78,28 @@
     private void SelectInDialog(string path)
     {
         _selectedPath = path;
+    }
+
+    private void ArmBackdropClose(MouseEventArgs args)
+    {
+        _isBackdropCloseArmed = args.Button == PrimaryMouseButton;
+    }
+
+    private void DisarmBackdropClose()
+    {
+        _isBackdropCloseArmed = false;
+    }
+
+    private Task CloseFromBackdrop(MouseEventArgs args)
+    {
+        if (!_isBackdropCloseArmed || args.Button != PrimaryMouseButton)
+        {
+            _isBackdropCloseArmed = false;
+            return Task.CompletedTask;
+        }
+
+        _isBackdropCloseArmed = false;
+        return OnClose.InvokeAsync();
     }
 
     private Task SelectManualPath()

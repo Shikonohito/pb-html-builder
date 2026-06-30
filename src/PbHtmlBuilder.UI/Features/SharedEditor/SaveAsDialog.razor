@@ -1,5 +1,16 @@
-<div class="project-dialog-backdrop" role="presentation" @onclick="OnClose">
-    <div class="project-dialog is-save-as" role="dialog" aria-modal="true" aria-labelledby="saveAsDialogTitle" @onclick:stopPropagation="true">
+<div class="project-dialog-backdrop"
+     role="presentation"
+     @onmousedown="ArmBackdropClose"
+     @onmouseup="CloseFromBackdrop">
+    <div class="project-dialog is-save-as"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="saveAsDialogTitle"
+         @onmousedown="DisarmBackdropClose"
+         @onmousedown:stopPropagation="true"
+         @onmouseup="DisarmBackdropClose"
+         @onmouseup:stopPropagation="true"
+         @onclick:stopPropagation="true">
         <div class="project-dialog-head">
             <h3 id="saveAsDialogTitle">Save as...</h3>
             <button class="project-dialog-icon-button" type="button" title="Close" aria-label="Close" @onclick="OnClose">×</button>
@@ -58,6 +69,9 @@
     private string _pickerPath = "";
     private string _fileName = "";
     private bool _initialized;
+    private bool _isBackdropCloseArmed;
+
+    private const long PrimaryMouseButton = 0;
 
     private string PickerPath => string.IsNullOrWhiteSpace(_pickerPath)
         ? "projects/theory"
@@ -85,6 +99,28 @@
     {
         _folderPath = entry.SelectionPath;
         _fileName = entry.Name;
+    }
+
+    private void ArmBackdropClose(MouseEventArgs args)
+    {
+        _isBackdropCloseArmed = args.Button == PrimaryMouseButton;
+    }
+
+    private void DisarmBackdropClose()
+    {
+        _isBackdropCloseArmed = false;
+    }
+
+    private Task CloseFromBackdrop(MouseEventArgs args)
+    {
+        if (!_isBackdropCloseArmed || args.Button != PrimaryMouseButton)
+        {
+            _isBackdropCloseArmed = false;
+            return Task.CompletedTask;
+        }
+
+        _isBackdropCloseArmed = false;
+        return OnClose.InvokeAsync();
     }
 
     private Task Submit()
