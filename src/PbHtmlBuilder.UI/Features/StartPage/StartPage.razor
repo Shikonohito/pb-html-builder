@@ -17,18 +17,32 @@
                 <div class="start-panel">
                     @if (_mountedAction is { } mountedAction)
                     {
-                        <CreateDocumentForm Action="mountedAction" OnCancel="CancelCreate" />
+                        <CreateDocumentForm Action="mountedAction"
+                                            @bind-FolderPath="_folderPath"
+                                            OnFolderPickerOpen="OpenFolderPicker"
+                                            OnCancel="CancelCreate" />
                     }
                 </div>
             </div>
         </div>
     </section>
+
+    @if (_isFolderPickerOpen && _mountedAction is { } pickerAction)
+    {
+        <FolderPickerDialog CurrentPath="@_folderPath"
+                            FolderPathPlaceholder="@pickerAction.FolderPathPlaceholder"
+                            ActionAccent="@pickerAction.Accent"
+                            OnSelected="SelectFolder"
+                            OnClose="CloseFolderPicker" />
+    }
 </div>
 
 @code {
     private static readonly TimeSpan StartSliderTransitionDuration = TimeSpan.FromMilliseconds(340);
 
     private StartDocumentAction? _mountedAction;
+    private string _folderPath = "";
+    private bool _isFolderPickerOpen;
     private bool _isCreateVisible;
     private int _transitionSession;
 
@@ -36,12 +50,15 @@
     {
         _transitionSession++;
         _mountedAction = action;
+        _folderPath = "";
+        _isFolderPickerOpen = false;
         _isCreateVisible = true;
     }
 
     private async Task CancelCreate()
     {
         var session = ++_transitionSession;
+        _isFolderPickerOpen = false;
         _isCreateVisible = false;
 
         await Task.Delay(StartSliderTransitionDuration);
@@ -49,6 +66,26 @@
         if (session == _transitionSession && !_isCreateVisible)
         {
             _mountedAction = null;
+            _folderPath = "";
         }
+    }
+
+    private void OpenFolderPicker()
+    {
+        if (_mountedAction is not null && _isCreateVisible)
+        {
+            _isFolderPickerOpen = true;
+        }
+    }
+
+    private void CloseFolderPicker()
+    {
+        _isFolderPickerOpen = false;
+    }
+
+    private void SelectFolder(string path)
+    {
+        _folderPath = path;
+        _isFolderPickerOpen = false;
     }
 }

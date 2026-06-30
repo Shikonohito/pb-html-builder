@@ -1,4 +1,4 @@
-<div class="folder-dialog-backdrop" role="presentation" @onclick="OnClose">
+<div class="folder-dialog-backdrop" style="@($"--action-accent: {ActionAccent};")" role="presentation" @onclick="OnClose">
     <div class="folder-dialog" role="dialog" aria-modal="true" aria-labelledby="folderDialogTitle" @onclick:stopPropagation="true">
         <div class="folder-dialog-head">
             <h3 id="folderDialogTitle">Choose folder</h3>
@@ -23,6 +23,9 @@
 
     [Parameter]
     public string FolderPathPlaceholder { get; set; } = "projects/theory";
+
+    [Parameter]
+    public string ActionAccent { get; set; } = "#4cc9f0";
 
     [Parameter]
     public EventCallback<string> OnSelected { get; set; }

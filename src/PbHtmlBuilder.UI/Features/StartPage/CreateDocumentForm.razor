@@ -15,13 +15,13 @@
                        type="text"
                        autocomplete="off"
                        placeholder="@Action.FolderPathPlaceholder"
-                       @bind="_folderPath"
-                       @bind:event="oninput" />
+                       value="@FolderPath"
+                       @oninput="HandleFolderPathInput" />
                 <button class="folder-picker-button"
                         type="button"
                         title="Choose folder"
                         aria-label="Choose folder"
-                        @onclick="OpenFolderPicker">
+                        @onclick="OnFolderPickerOpen">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></svg>
                 </button>
             </span>
@@ -54,14 +54,6 @@
             <button class="cancel-button" type="button" @onclick="OnCancel">Cancel</button>
         </div>
     </form>
-
-    @if (_isFolderPickerOpen)
-    {
-        <FolderPickerDialog CurrentPath="@_folderPath"
-                            FolderPathPlaceholder="@Action.FolderPathPlaceholder"
-                            OnSelected="SelectFolder"
-                            OnClose="CloseFolderPicker" />
-    }
 </div>
 
 @code {
@@ -69,33 +61,27 @@
     public required StartDocumentAction Action { get; set; }
 
     [Parameter]
+    public string FolderPath { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<string> FolderPathChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnFolderPickerOpen { get; set; }
+
+    [Parameter]
     public EventCallback OnCancel { get; set; }
 
-    private string _folderPath = "";
     private string _fileName = "";
     private string _documentTitle = "";
-    private bool _isFolderPickerOpen;
 
-    private void OpenFolderPicker()
+    private Task HandleFolderPathInput(ChangeEventArgs args)
     {
-        _isFolderPickerOpen = true;
-    }
-
-    private void CloseFolderPicker()
-    {
-        _isFolderPickerOpen = false;
-    }
-
-    private void SelectFolder(string path)
-    {
-        _folderPath = path;
-        _isFolderPickerOpen = false;
+        return FolderPathChanged.InvokeAsync(args.Value?.ToString() ?? "");
     }
 
     private void HandleCreate()
     {
-        _isFolderPickerOpen = false;
-
         var builderRoute = GetBuilderRoute(Action.Key);
         if (builderRoute is null)
         {
@@ -109,7 +95,7 @@
     {
         var queryParameters = new List<string>();
 
-        AddQueryParameter(queryParameters, "folderPath", _folderPath.Trim().Replace('\\', '/'));
+        AddQueryParameter(queryParameters, "folderPath", FolderPath.Trim().Replace('\\', '/'));
         AddQueryParameter(queryParameters, "fileName", _fileName.Trim());
         AddQueryParameter(queryParameters, "title", ResolveDocumentTitle());
 
