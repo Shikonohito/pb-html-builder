@@ -182,9 +182,15 @@
   display: grid;
   align-content: start;
   flex: 1 1 auto;
-  gap: 0;
+  gap: 8px;
   min-height: 0;
   overflow: hidden auto;
+}
+
+.builder-outline-slot,
+.builder-section-slot {
+  position: relative;
+  min-width: 0;
 }
 
 .builder-sidebar-footer {
@@ -201,8 +207,8 @@
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
   align-items: center;
+  width: 100%;
   min-height: 46px;
-  margin-block: 4px;
   padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -292,7 +298,7 @@
 .builder-section-skeleton {
   display: grid;
   min-width: 0;
-  gap: 0;
+  gap: 50px;
 }
 
 .builder-section {
@@ -330,11 +336,39 @@
 }
 
 .builder-insertion-rail-main {
-  min-height: 50px;
+  position: absolute;
+  z-index: 4;
+  top: -50px;
+  right: 0;
+  left: 0;
+  height: 50px;
 }
 
 .builder-insertion-rail-sidebar {
-  min-height: 18px;
+  position: absolute;
+  z-index: 4;
+  top: -8px;
+  right: 0;
+  left: 0;
+  height: 8px;
+}
+
+.builder-section-slot.is-first > .builder-insertion-rail-main:not(.builder-insertion-rail-end) {
+  top: -38px;
+  height: 38px;
+}
+
+.builder-insertion-rail-main.builder-insertion-rail-end,
+.builder-insertion-rail-sidebar.builder-insertion-rail-end {
+  top: 100%;
+}
+
+.builder-insertion-rail-main.builder-insertion-rail-end {
+  height: 50px;
+}
+
+.builder-insertion-rail-sidebar.builder-insertion-rail-end {
+  height: 8px;
 }
 
 .builder-insertion-rail-empty {
@@ -350,6 +384,7 @@
   left: 0;
   border-top: 1px dashed color-mix(in srgb, var(--builder-accent) 72%, var(--builder-line));
   opacity: 0;
+  pointer-events: none;
   transform: translateY(-50%);
   transition: opacity 140ms ease;
 }
@@ -369,6 +404,7 @@
   cursor: pointer;
   line-height: 1;
   opacity: 0;
+  pointer-events: none;
   transform: scale(0.92);
   transition:
     background 140ms ease,
@@ -385,11 +421,15 @@
 }
 
 .builder-insertion-rail:hover .builder-insertion-line,
-.builder-insertion-rail:focus-within .builder-insertion-line,
+.builder-insertion-rail:focus-within .builder-insertion-line {
+  opacity: 1;
+}
+
 .builder-insertion-rail:hover .builder-insertion-button,
 .builder-insertion-rail:focus-within .builder-insertion-button,
 .builder-insertion-rail-empty .builder-insertion-button {
   opacity: 1;
+  pointer-events: auto;
   transform: scale(1);
 }
 

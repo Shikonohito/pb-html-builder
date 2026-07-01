@@ -46,27 +46,29 @@
                 @for (var index = 0; index < ResolvedSections.Count; index++)
                 {
                     var section = ResolvedSections[index];
+                    var isLast = index == ResolvedSections.Count - 1;
 
-                    <InsertionRail InsertIndex="@index"
-                                   Variant="sidebar"
-                                   AriaLabel="@($"Добавить секцию перед {FormatSectionNumber(index)}")"
-                                   OnInsert="InsertSection" />
+                    <div @key="section.Id" class="builder-outline-slot @(index == 0 ? "is-first" : null)">
+                        <InsertionRail InsertIndex="@index"
+                                       Variant="sidebar"
+                                       AriaLabel="@($"Добавить секцию перед {FormatSectionNumber(index)}")"
+                                       OnInsert="InsertSection" />
 
-                    <button @key="section.Id"
-                            class="builder-outline-item @(index == 0 ? "is-current" : null)"
-                            type="button"
-                            aria-current="@(index == 0 ? "true" : null)">
-                        <span>@FormatSectionNumber(index)</span>
-                        <strong>@section.Title</strong>
-                    </button>
-                }
+                        <button class="builder-outline-item @(index == 0 ? "is-current" : null)"
+                                type="button"
+                                aria-current="@(index == 0 ? "true" : null)">
+                            <span>@FormatSectionNumber(index)</span>
+                            <strong>@section.Title</strong>
+                        </button>
 
-                @if (ResolvedSections.Count > 0)
-                {
-                    <InsertionRail InsertIndex="@ResolvedSections.Count"
-                                   Variant="sidebar"
-                                   AriaLabel="Добавить секцию в конец"
-                                   OnInsert="InsertSection" />
+                        @if (isLast)
+                        {
+                            <InsertionRail InsertIndex="@ResolvedSections.Count"
+                                           Variant="sidebar-end"
+                                           AriaLabel="Добавить секцию в конец"
+                                           OnInsert="InsertSection" />
+                        }
+                    </div>
                 }
             }
             else if (PrimaryOutlineItem is { } outlineItem)
@@ -125,27 +127,32 @@
                 @for (var index = 0; index < ResolvedSections.Count; index++)
                 {
                     var section = ResolvedSections[index];
+                    var isLast = index == ResolvedSections.Count - 1;
 
-                    <InsertionRail InsertIndex="@index"
-                                   Variant="main"
-                                   AriaLabel="@($"Добавить секцию перед {FormatSectionNumber(index)}")"
-                                   OnInsert="InsertSection" />
+                    <div @key="section.Id" class="builder-section-slot @(index == 0 ? "is-first" : null)">
+                        <InsertionRail InsertIndex="@index"
+                                       Variant="main"
+                                       AriaLabel="@($"Добавить секцию перед {FormatSectionNumber(index)}")"
+                                       OnInsert="InsertSection" />
 
-                    <section @key="section.Id"
-                             id="@section.Id"
-                             class="builder-section"
-                             data-section-id="@section.Id">
-                        <div class="builder-section-heading section-heading">
-                            <span>@FormatSectionNumber(index)</span>
-                            <h3>@section.Title</h3>
-                        </div>
-                    </section>
+                        <section id="@section.Id"
+                                 class="builder-section"
+                                 data-section-id="@section.Id">
+                            <div class="builder-section-heading section-heading">
+                                <span>@FormatSectionNumber(index)</span>
+                                <h3>@section.Title</h3>
+                            </div>
+                        </section>
+
+                        @if (isLast)
+                        {
+                            <InsertionRail InsertIndex="@ResolvedSections.Count"
+                                           Variant="main-end"
+                                           AriaLabel="Добавить секцию в конец"
+                                           OnInsert="InsertSection" />
+                        }
+                    </div>
                 }
-
-                <InsertionRail InsertIndex="@ResolvedSections.Count"
-                               Variant="main"
-                               AriaLabel="Добавить секцию в конец"
-                               OnInsert="InsertSection" />
             }
         </article>
     </main>

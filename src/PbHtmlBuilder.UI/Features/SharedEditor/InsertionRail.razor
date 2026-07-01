@@ -37,7 +37,9 @@
 
     private string RailClass => (Variant ?? string.Empty).ToLowerInvariant() switch
     {
+        "main-end" => "builder-insertion-rail builder-insertion-rail-main builder-insertion-rail-end",
         "sidebar" => "builder-insertion-rail builder-insertion-rail-sidebar",
+        "sidebar-end" => "builder-insertion-rail builder-insertion-rail-sidebar builder-insertion-rail-end",
         "empty" => "builder-insertion-rail builder-insertion-rail-empty",
         _ => "builder-insertion-rail builder-insertion-rail-main"
     };
