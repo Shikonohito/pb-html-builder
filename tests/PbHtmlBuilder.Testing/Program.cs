@@ -19,6 +19,7 @@ var tests = new (string Name, Func<Task> Run)[]
     ("section inserter clamps out-of-range indexes", SectionInserterClampsIndexes),
     ("theory renderer excludes builder insertion tools", TheoryRendererExcludesBuilderInsertionTools),
     ("theory renderer saves section outline items", TheoryRendererSavesSectionOutlineItems),
+    ("theory renderer saves builder shell shadows", TheoryRendererSavesBuilderShellShadows),
     ("save use case writes section outline items", SaveUseCaseWritesSectionOutlineItemsAsync),
     ("folder browser resolves default root from Host content root", FolderBrowserResolvesDefaultRoot),
     ("folder browser lists files and directories", FolderBrowserListsFilesAndDirectories),
@@ -237,6 +238,20 @@ static Task TheoryRendererSavesSectionOutlineItems()
     AssertStringContains(html, "<span>02</span>");
     AssertStringContains(html, "<strong>Second</strong>");
     AssertDoesNotContain(html, "<strong>Section map</strong>");
+    return Task.CompletedTask;
+}
+
+static Task TheoryRendererSavesBuilderShellShadows()
+{
+    var document = CreateDocument(DocumentTarget.Create("projects/theory", "lesson.html"));
+    var renderer = new TheoryHtmlRenderer();
+
+    var html = renderer.Render(document);
+
+    AssertStringContains(html, "--builder-shadow-default: 20px 20px 10px rgba(0, 0, 0, 0.24);");
+    AssertStringContains(html, "box-shadow: 20px 10px 10px rgba(0, 0, 0, 0.24);");
+    AssertStringContains(html, "box-shadow: var(--builder-shadow-default);");
+    AssertDoesNotContain(html, "box-shadow: 25px 25px 10px rgba(0, 0, 0, 0.24);");
     return Task.CompletedTask;
 }
 

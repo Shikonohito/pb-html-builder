@@ -200,6 +200,7 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
         :root {
           color-scheme: dark;
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          --builder-shadow-default: 20px 20px 10px rgba(0, 0, 0, 0.24);
         }
 
         * {
@@ -477,7 +478,7 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           border: 1px solid #3b414c;
           border-radius: 8px;
           background: #191d24;
-          box-shadow: 25px 25px 10px rgba(0, 0, 0, 0.24);
+          box-shadow: 20px 10px 10px rgba(0, 0, 0, 0.24);
           color: var(--builder-text);
           cursor: pointer;
           overflow-wrap: break-word;
@@ -505,7 +506,7 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           border: 1px solid var(--builder-line);
           border-radius: 8px;
           background: color-mix(in srgb, var(--builder-surface-strong) 94%, transparent);
-          box-shadow: 25px 25px 10px rgba(0, 0, 0, 0.24);
+          box-shadow: var(--builder-shadow-default);
           scroll-margin-top: calc(var(--builder-header-height) + 24px);
         }
 
