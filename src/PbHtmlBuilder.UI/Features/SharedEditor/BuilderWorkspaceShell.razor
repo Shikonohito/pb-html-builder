@@ -41,7 +41,35 @@
         </div>
 
         <nav class="builder-outline" aria-label="@OutlineLabel">
-            @if (PrimaryOutlineItem is { } outlineItem)
+            @if (TheoryDocument is not null)
+            {
+                @for (var index = 0; index < ResolvedSections.Count; index++)
+                {
+                    var section = ResolvedSections[index];
+
+                    <InsertionRail InsertIndex="@index"
+                                   Variant="sidebar"
+                                   AriaLabel="@($"Добавить секцию перед {FormatSectionNumber(index)}")"
+                                   OnInsert="InsertSection" />
+
+                    <button @key="section.Id"
+                            class="builder-outline-item @(index == 0 ? "is-current" : null)"
+                            type="button"
+                            aria-current="@(index == 0 ? "true" : null)">
+                        <span>@FormatSectionNumber(index)</span>
+                        <strong>@section.Title</strong>
+                    </button>
+                }
+
+                @if (ResolvedSections.Count > 0)
+                {
+                    <InsertionRail InsertIndex="@ResolvedSections.Count"
+                                   Variant="sidebar"
+                                   AriaLabel="Добавить секцию в конец"
+                                   OnInsert="InsertSection" />
+                }
+            }
+            else if (PrimaryOutlineItem is { } outlineItem)
             {
                 <button class="builder-outline-item is-current"
                         type="button"
@@ -76,12 +104,49 @@
         }
 
         <article class="builder-section-skeleton">
-            <section class="builder-section">
-                <div class="builder-section-heading section-heading">
-                    <span>01</span>
-                    <h3>@PrimarySectionTitle</h3>
-                </div>
-            </section>
+            @if (TheoryDocument is null)
+            {
+                <section class="builder-section">
+                    <div class="builder-section-heading section-heading">
+                        <span>01</span>
+                        <h3>@PrimarySectionTitle</h3>
+                    </div>
+                </section>
+            }
+            else if (ResolvedSections.Count == 0)
+            {
+                <InsertionRail InsertIndex="0"
+                               Variant="empty"
+                               AriaLabel="Добавить первую секцию"
+                               OnInsert="InsertSection" />
+            }
+            else
+            {
+                @for (var index = 0; index < ResolvedSections.Count; index++)
+                {
+                    var section = ResolvedSections[index];
+
+                    <InsertionRail InsertIndex="@index"
+                                   Variant="main"
+                                   AriaLabel="@($"Добавить секцию перед {FormatSectionNumber(index)}")"
+                                   OnInsert="InsertSection" />
+
+                    <section @key="section.Id"
+                             id="@section.Id"
+                             class="builder-section"
+                             data-section-id="@section.Id">
+                        <div class="builder-section-heading section-heading">
+                            <span>@FormatSectionNumber(index)</span>
+                            <h3>@section.Title</h3>
+                        </div>
+                    </section>
+                }
+
+                <InsertionRail InsertIndex="@ResolvedSections.Count"
+                               Variant="main"
+                               AriaLabel="Добавить секцию в конец"
+                               OnInsert="InsertSection" />
+            }
         </article>
     </main>
 </div>
@@ -207,6 +272,8 @@
         ? DefaultCanvasItems
         : CanvasItems;
 
+    private IReadOnlyList<TheorySection> ResolvedSections => TheoryDocument?.Sections ?? [];
+
     private string SidebarExpanded => (!_isSidebarCollapsed).ToString().ToLowerInvariant();
 
     private bool ProjectCommandsAvailable => TheoryDocument is not null;
@@ -214,6 +281,17 @@
     private void ToggleSidebar()
     {
         _isSidebarCollapsed = !_isSidebarCollapsed;
+    }
+
+    private Task InsertSection(int index)
+    {
+        if (TheoryDocument is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var document = TheoryDocumentSectionInserter.Insert(TheoryDocument, index);
+        return OnTheoryDocumentChanged.InvokeAsync(document);
     }
 
     private void OpenProjectContextMenu(MouseEventArgs args)
@@ -366,6 +444,11 @@
             : $"Last modified: {result.LastModifiedAt.Value.ToLocalTime():g}.";
 
         return $"Overwrite Theory HTML file {result.RelativePath}? {lastModified}";
+    }
+
+    private static string FormatSectionNumber(int index)
+    {
+        return (index + 1).ToString("00");
     }
 
     private sealed record SaveConfirmation(

@@ -60,10 +60,7 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
                   </div>
 
                   <nav class="builder-outline" aria-label="Оглавление">
-                    <a class="builder-outline-item is-current" href="#section-map" aria-current="true">
-                      <span>01</span>
-                      <strong>Section map</strong>
-                    </a>
+            {{RenderOutlineItems(document)}}
                   </nav>
 
                   <div class="builder-sidebar-footer">{{Text(document.Brand.Copyright)}}</div>
@@ -137,6 +134,22 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
                 ? id
                 : "section-map";
             return $"          <a href=\"#{Attribute(anchorId)}\" data-map-cell-id=\"{Attribute(cell.Id)}\">{Text(cell.Title)}</a>";
+        }));
+    }
+
+    private static string RenderOutlineItems(TheoryDocument document)
+    {
+        return string.Join(Environment.NewLine, document.Sections.Select((section, index) =>
+        {
+            var currentClass = index == 0 ? " is-current" : string.Empty;
+            var currentAttribute = index == 0 ? " aria-current=\"true\"" : string.Empty;
+
+            return $$"""
+                    <a class="builder-outline-item{{currentClass}}" href="#{{Attribute(section.Id)}}"{{currentAttribute}}>
+                      <span>{{(index + 1).ToString("00")}}</span>
+                      <strong>{{Text(section.Title)}}</strong>
+                    </a>
+            """;
         }));
     }
 

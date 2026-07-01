@@ -1,3 +1,5 @@
+using PbHtmlBuilder.Application.Theory;
+using PbHtmlBuilder.Artifacts.Renderers;
 using PbHtmlBuilder.Application.Projects;
 using PbHtmlBuilder.Domain.Documents;
 using PbHtmlBuilder.Host.Configuration;
@@ -12,6 +14,12 @@ var tests = new (string Name, Func<Task> Run)[]
     ("storage rejects file names that contain paths", StorageRejectsFileNamePaths),
     ("save use case requires create-directory confirmation", SaveUseCaseRequiresCreateDirectoryConfirmationAsync),
     ("save use case requires overwrite confirmation and creates backup", SaveUseCaseRequiresOverwriteAndCreatesBackupAsync),
+    ("section inserter creates a default section in empty documents", SectionInserterCreatesDefaultSection),
+    ("section inserter preserves section order around inserted sections", SectionInserterPreservesOrder),
+    ("section inserter clamps out-of-range indexes", SectionInserterClampsIndexes),
+    ("theory renderer excludes builder insertion tools", TheoryRendererExcludesBuilderInsertionTools),
+    ("theory renderer saves section outline items", TheoryRendererSavesSectionOutlineItems),
+    ("save use case writes section outline items", SaveUseCaseWritesSectionOutlineItemsAsync),
     ("folder browser resolves default root from Host content root", FolderBrowserResolvesDefaultRoot),
     ("folder browser lists files and directories", FolderBrowserListsFilesAndDirectories),
     ("folder browser navigates above root", FolderBrowserNavigatesAboveRoot),
@@ -131,6 +139,136 @@ static async Task SaveUseCaseRequiresOverwriteAndCreatesBackupAsync()
     AssertTrue(File.Exists(Path.Combine(
         scope.RootPath,
         saved.BackupRelativePath!.Replace('/', Path.DirectorySeparatorChar))));
+}
+
+static Task SectionInserterCreatesDefaultSection()
+{
+    var document = CreateDocument(DocumentTarget.Create("projects/theory", "lesson.html"));
+
+    var updated = TheoryDocumentSectionInserter.Insert(document, 0);
+
+    AssertEqual(1, updated.Sections.Count);
+    AssertEqual(TheoryDocumentSectionInserter.DefaultSectionTitle, updated.Sections[0].Title);
+    AssertTrue(updated.Sections[0].Id.StartsWith("sec_", StringComparison.Ordinal));
+    AssertEqual(0, updated.SectionMapCells.Count);
+    return Task.CompletedTask;
+}
+
+static Task SectionInserterPreservesOrder()
+{
+    var first = new TheorySection("sec_first", "First");
+    var second = new TheorySection("sec_second", "Second");
+    var document = CreateDocument(DocumentTarget.Create("projects/theory", "lesson.html")) with
+    {
+        Sections = [first, second]
+    };
+
+    var before = TheoryDocumentSectionInserter.Insert(document, 0);
+    AssertEqual(3, before.Sections.Count);
+    AssertEqual(TheoryDocumentSectionInserter.DefaultSectionTitle, before.Sections[0].Title);
+    AssertEqual("sec_first", before.Sections[1].Id);
+    AssertEqual("sec_second", before.Sections[2].Id);
+
+    var middle = TheoryDocumentSectionInserter.Insert(document, 1);
+    AssertEqual("sec_first", middle.Sections[0].Id);
+    AssertEqual(TheoryDocumentSectionInserter.DefaultSectionTitle, middle.Sections[1].Title);
+    AssertEqual("sec_second", middle.Sections[2].Id);
+
+    var after = TheoryDocumentSectionInserter.Insert(document, 2);
+    AssertEqual("sec_first", after.Sections[0].Id);
+    AssertEqual("sec_second", after.Sections[1].Id);
+    AssertEqual(TheoryDocumentSectionInserter.DefaultSectionTitle, after.Sections[2].Title);
+    return Task.CompletedTask;
+}
+
+static Task SectionInserterClampsIndexes()
+{
+    var existing = new TheorySection("sec_existing", "Existing");
+    var document = CreateDocument(DocumentTarget.Create("projects/theory", "lesson.html")) with
+    {
+        Sections = [existing]
+    };
+
+    var negative = TheoryDocumentSectionInserter.Insert(document, -10);
+    AssertEqual(TheoryDocumentSectionInserter.DefaultSectionTitle, negative.Sections[0].Title);
+    AssertEqual("sec_existing", negative.Sections[1].Id);
+
+    var tooLarge = TheoryDocumentSectionInserter.Insert(document, 10);
+    AssertEqual("sec_existing", tooLarge.Sections[0].Id);
+    AssertEqual(TheoryDocumentSectionInserter.DefaultSectionTitle, tooLarge.Sections[1].Title);
+    return Task.CompletedTask;
+}
+
+static Task TheoryRendererExcludesBuilderInsertionTools()
+{
+    var document = CreateDocument(DocumentTarget.Create("projects/theory", "lesson.html")) with
+    {
+        Sections = [new TheorySection("sec_rendered", "Rendered section")]
+    };
+    var renderer = new TheoryHtmlRenderer();
+
+    var html = renderer.Render(document);
+
+    AssertStringContains(html, "builder-section-heading section-heading");
+    AssertDoesNotContain(html, "builder-insertion-rail");
+    AssertDoesNotContain(html, "builder-insertion-button");
+    AssertDoesNotContain(html, "lucide-plus-icon");
+    return Task.CompletedTask;
+}
+
+static Task TheoryRendererSavesSectionOutlineItems()
+{
+    var document = CreateDocument(DocumentTarget.Create("projects/theory", "lesson.html")) with
+    {
+        Sections =
+        [
+            new TheorySection("sec_first", "First"),
+            new TheorySection("sec_second", "Second")
+        ]
+    };
+    var renderer = new TheoryHtmlRenderer();
+
+    var html = renderer.Render(document);
+
+    AssertStringContains(html, "<a class=\"builder-outline-item is-current\" href=\"#sec_first\" aria-current=\"true\">");
+    AssertStringContains(html, "<span>01</span>");
+    AssertStringContains(html, "<strong>First</strong>");
+    AssertStringContains(html, "<a class=\"builder-outline-item\" href=\"#sec_second\">");
+    AssertStringContains(html, "<span>02</span>");
+    AssertStringContains(html, "<strong>Second</strong>");
+    AssertDoesNotContain(html, "<strong>Section map</strong>");
+    return Task.CompletedTask;
+}
+
+static async Task SaveUseCaseWritesSectionOutlineItemsAsync()
+{
+    await using var scope = TestWorkspace.Create();
+    var document = CreateDocument(DocumentTarget.Create("projects/theory", "lesson.html")) with
+    {
+        Sections =
+        [
+            new TheorySection("sec_first", "First"),
+            new TheorySection("sec_second", "Second")
+        ]
+    };
+    var useCase = new TheoryProjectSaveUseCase(
+        new FixedTimeProvider(),
+        scope.CreateStorage(),
+        new TheoryHtmlRenderer());
+
+    var result = await useCase.SaveAsync(
+        document,
+        new TheoryProjectSaveOptions(AllowCreateDirectory: true));
+    var savedHtml = await File.ReadAllTextAsync(Path.Combine(
+        scope.RootPath,
+        "projects",
+        "theory",
+        "lesson.html"));
+
+    AssertEqual(ProjectSaveStatus.Saved, result.Status);
+    AssertStringContains(savedHtml, "<a class=\"builder-outline-item is-current\" href=\"#sec_first\" aria-current=\"true\">");
+    AssertStringContains(savedHtml, "<a class=\"builder-outline-item\" href=\"#sec_second\">");
+    return;
 }
 
 static Task FolderBrowserResolvesDefaultRoot()
@@ -259,6 +397,22 @@ static void AssertContains(IEnumerable<string> values, string expected)
     if (!values.Any(value => value.Contains(expected, StringComparison.OrdinalIgnoreCase)))
     {
         throw new InvalidOperationException($"Expected one value to contain '{expected}'. Values: {string.Join(" | ", values)}");
+    }
+}
+
+static void AssertStringContains(string value, string expected)
+{
+    if (!value.Contains(expected, StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException($"Expected value to contain '{expected}'.");
+    }
+}
+
+static void AssertDoesNotContain(string value, string expected)
+{
+    if (value.Contains(expected, StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException($"Expected value not to contain '{expected}'.");
     }
 }
 

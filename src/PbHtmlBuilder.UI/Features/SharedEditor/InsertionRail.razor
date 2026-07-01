@@ -1,1 +1,49 @@
-@* Structure placeholder. *@
+<div class="@RailClass">
+    @if (!IsEmpty)
+    {
+        <span class="builder-insertion-line" aria-hidden="true"></span>
+    }
+
+    <button class="builder-insertion-button"
+            type="button"
+            title="@ResolvedAriaLabel"
+            aria-label="@ResolvedAriaLabel"
+            @onclick="InsertAsync">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-icon lucide-plus" aria-hidden="true" focusable="false">
+            <path d="M5 12h14" />
+            <path d="M12 5v14" />
+        </svg>
+    </button>
+</div>
+
+@code {
+    [Parameter]
+    public int InsertIndex { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnInsert { get; set; }
+
+    [Parameter]
+    public string Variant { get; set; } = "main";
+
+    [Parameter]
+    public string AriaLabel { get; set; } = "Добавить секцию";
+
+    private bool IsEmpty => string.Equals(Variant, "empty", StringComparison.OrdinalIgnoreCase);
+
+    private string ResolvedAriaLabel => string.IsNullOrWhiteSpace(AriaLabel)
+        ? "Добавить секцию"
+        : AriaLabel.Trim();
+
+    private string RailClass => (Variant ?? string.Empty).ToLowerInvariant() switch
+    {
+        "sidebar" => "builder-insertion-rail builder-insertion-rail-sidebar",
+        "empty" => "builder-insertion-rail builder-insertion-rail-empty",
+        _ => "builder-insertion-rail builder-insertion-rail-main"
+    };
+
+    private Task InsertAsync()
+    {
+        return OnInsert.InvokeAsync(InsertIndex);
+    }
+}
