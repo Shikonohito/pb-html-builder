@@ -441,12 +441,12 @@ a.builder-outline-item.is-current {
 }
 
 .builder-insertion-rail:hover .builder-insertion-line,
-.builder-insertion-rail:focus-within .builder-insertion-line {
+.builder-insertion-rail:has(.builder-insertion-button:focus-visible) .builder-insertion-line {
   opacity: 1;
 }
 
 .builder-insertion-rail:hover .builder-insertion-button,
-.builder-insertion-rail:focus-within .builder-insertion-button,
+.builder-insertion-rail:has(.builder-insertion-button:focus-visible) .builder-insertion-button,
 .builder-insertion-rail-empty .builder-insertion-button {
   opacity: 1;
   pointer-events: auto;
@@ -454,7 +454,7 @@ a.builder-outline-item.is-current {
 }
 
 .builder-insertion-rail-sidebar:hover .builder-insertion-button,
-.builder-insertion-rail-sidebar:focus-within .builder-insertion-button {
+.builder-insertion-rail-sidebar:has(.builder-insertion-button:focus-visible) .builder-insertion-button {
   transform: translate(-50%, -50%) scale(1);
 }
 
