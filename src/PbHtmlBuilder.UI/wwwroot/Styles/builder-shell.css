@@ -414,6 +414,13 @@
     transform 140ms ease;
 }
 
+.builder-insertion-rail-sidebar .builder-insertion-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.92);
+}
+
 .builder-insertion-button svg {
   display: block;
   width: 24px;
@@ -431,6 +438,11 @@
   opacity: 1;
   pointer-events: auto;
   transform: scale(1);
+}
+
+.builder-insertion-rail-sidebar:hover .builder-insertion-button,
+.builder-insertion-rail-sidebar:focus-within .builder-insertion-button {
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .builder-insertion-button:hover {
