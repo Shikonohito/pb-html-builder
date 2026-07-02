@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using PbHtmlBuilder.Application.Projects;
 using PbHtmlBuilder.Domain.Documents;
@@ -6,6 +7,10 @@ namespace PbHtmlBuilder.Infrastructure.Projects;
 
 public sealed class WorkingDirectoryProjectFileStorage : IProjectFileStorage
 {
+    private const int MaxBackupSlots = 10;
+    private const int BackupTimestampLength = 16;
+    private const string BackupSuffix = ".bak.html";
+
     private static readonly HashSet<string> ReservedNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "CON",
@@ -124,13 +129,154 @@ public sealed class WorkingDirectoryProjectFileStorage : IProjectFileStorage
     private string CreateBackup(ResolvedProjectPath resolved)
     {
         var timestamp = _clock.GetUtcNow().ToString("yyyyMMdd'T'HHmmss'Z'");
-        var fileName = Path.GetFileNameWithoutExtension(resolved.Target.FileName);
-        var backupFileName = $"{fileName}.{timestamp}.bak.html";
+        var baseFileName = Path.GetFileNameWithoutExtension(resolved.Target.FileName);
+        PruneOldBackups(resolved.DirectoryPath, baseFileName);
+
+        var backupFileName = GetAvailableBackupFileName(
+            resolved.DirectoryPath,
+            baseFileName,
+            timestamp);
         var backupFullPath = Path.Combine(resolved.DirectoryPath, backupFileName);
 
         File.Copy(resolved.FullPath, backupFullPath, overwrite: false);
 
         return BuildDisplayPath(resolved.Target.FolderPath, backupFileName);
+    }
+
+    private static void PruneOldBackups(string directoryPath, string baseFileName)
+    {
+        var backups = EnumerateBackupFiles(directoryPath, baseFileName)
+            .OrderBy(backup => backup.Timestamp, StringComparer.Ordinal)
+            .ThenBy(backup => backup.Suffix)
+            .ThenBy(backup => backup.FileName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var backupDeleteCount = backups.Count - MaxBackupSlots + 1;
+        if (backupDeleteCount <= 0)
+        {
+            return;
+        }
+
+        foreach (var backup in backups.Take(backupDeleteCount))
+        {
+            File.Delete(backup.FullPath);
+        }
+    }
+
+    private static IEnumerable<BackupFile> EnumerateBackupFiles(string directoryPath, string baseFileName)
+    {
+        foreach (var fullPath in Directory.EnumerateFiles(directoryPath, $"*{BackupSuffix}", SearchOption.TopDirectoryOnly))
+        {
+            var fileName = Path.GetFileName(fullPath);
+            if (TryParseBackupFileName(fileName, baseFileName, out var timestamp, out var suffix))
+            {
+                yield return new BackupFile(fullPath, fileName, timestamp, suffix);
+            }
+        }
+    }
+
+    private static bool TryParseBackupFileName(
+        string fileName,
+        string baseFileName,
+        out string timestamp,
+        out int suffix)
+    {
+        timestamp = string.Empty;
+        suffix = 0;
+
+        var prefix = $"{baseFileName}.";
+        if (!fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            || !fileName.EndsWith(BackupSuffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var backupMarkerStart = fileName.Length - BackupSuffix.Length;
+        var version = fileName[prefix.Length..backupMarkerStart];
+        if (version.Length == BackupTimestampLength)
+        {
+            timestamp = version;
+            return IsBackupTimestamp(timestamp);
+        }
+
+        if (version.Length <= BackupTimestampLength
+            || version[BackupTimestampLength] != '.')
+        {
+            return false;
+        }
+
+        timestamp = version[..BackupTimestampLength];
+        var suffixText = version[(BackupTimestampLength + 1)..];
+        return IsBackupTimestamp(timestamp)
+            && TryParsePositiveInt(suffixText, out suffix);
+    }
+
+    private static string GetAvailableBackupFileName(
+        string directoryPath,
+        string baseFileName,
+        string timestamp)
+    {
+        var sameTimestampBackups = EnumerateBackupFiles(directoryPath, baseFileName)
+            .Where(backup => backup.Timestamp.Equals(timestamp, StringComparison.Ordinal))
+            .ToList();
+        var suffix = 0;
+        if (sameTimestampBackups.Count > 0)
+        {
+            var maxSuffix = sameTimestampBackups.Max(backup => backup.Suffix);
+            if (maxSuffix == int.MaxValue)
+            {
+                throw new IOException($"No backup slot is available for {baseFileName} at {timestamp}.");
+            }
+
+            suffix = maxSuffix + 1;
+        }
+
+        for (; suffix < int.MaxValue; suffix++)
+        {
+            var backupFileName = BuildBackupFileName(baseFileName, timestamp, suffix);
+            if (!File.Exists(Path.Combine(directoryPath, backupFileName)))
+            {
+                return backupFileName;
+            }
+        }
+
+        throw new IOException($"No backup slot is available for {baseFileName} at {timestamp}.");
+    }
+
+    private static string BuildBackupFileName(string baseFileName, string timestamp, int suffix)
+    {
+        return suffix == 0
+            ? $"{baseFileName}.{timestamp}{BackupSuffix}"
+            : $"{baseFileName}.{timestamp}.{suffix}{BackupSuffix}";
+    }
+
+    private static bool IsBackupTimestamp(string value)
+    {
+        return DateTimeOffset.TryParseExact(
+            value,
+            "yyyyMMdd'T'HHmmss'Z'",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out _);
+    }
+
+    private static bool TryParsePositiveInt(string value, out int result)
+    {
+        result = 0;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        foreach (var character in value)
+        {
+            if (!char.IsAsciiDigit(character))
+            {
+                return false;
+            }
+        }
+
+        return int.TryParse(value, CultureInfo.InvariantCulture, out result)
+            && result > 0;
     }
 
     private ResolvedProjectPath Resolve(DocumentTarget target)
@@ -300,6 +446,8 @@ public sealed class WorkingDirectoryProjectFileStorage : IProjectFileStorage
             ? root
             : trimmed;
     }
+
+    private sealed record BackupFile(string FullPath, string FileName, string Timestamp, int Suffix);
 
     private sealed record ResolvedProjectPath(
         DocumentTarget Target,
