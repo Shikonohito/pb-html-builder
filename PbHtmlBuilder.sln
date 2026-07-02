@@ -17,10 +17,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PbHtmlBuilder.Artifacts", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PbHtmlBuilder.Infrastructure", "src\PbHtmlBuilder.Infrastructure\PbHtmlBuilder.Infrastructure.csproj", "{ED4E76F9-8B1F-4D5E-A8CC-15133B45168A}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PbHtmlBuilder.Testing", "tests\PbHtmlBuilder.Testing\PbHtmlBuilder.Testing.csproj", "{3C4A619B-4605-406B-A354-94ACAF7A8EAD}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -103,18 +99,6 @@ Global
 		{ED4E76F9-8B1F-4D5E-A8CC-15133B45168A}.Release|x64.Build.0 = Release|Any CPU
 		{ED4E76F9-8B1F-4D5E-A8CC-15133B45168A}.Release|x86.ActiveCfg = Release|Any CPU
 		{ED4E76F9-8B1F-4D5E-A8CC-15133B45168A}.Release|x86.Build.0 = Release|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Debug|x64.Build.0 = Debug|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Debug|x86.Build.0 = Debug|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Release|x64.ActiveCfg = Release|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Release|x64.Build.0 = Release|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Release|x86.ActiveCfg = Release|Any CPU
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -126,6 +110,5 @@ Global
 		{F879E08A-CAA2-4182-8570-FFB8AA654996} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{FA461ADA-87C5-4C20-AC7B-C9EFE3C4D47D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{ED4E76F9-8B1F-4D5E-A8CC-15133B45168A} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
-		{3C4A619B-4605-406B-A354-94ACAF7A8EAD} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

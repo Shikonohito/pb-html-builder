@@ -1,0 +1,4 @@
+interface:
+  display_name: ".NET Build"
+  short_description: "Build solution via scripts/Build.ps1"
+  default_prompt: "Use $dotnet-build to build this project."
