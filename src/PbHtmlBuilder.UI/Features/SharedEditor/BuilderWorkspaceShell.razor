@@ -437,12 +437,7 @@
 
     private static string BuildSavedMessage(TheoryProjectSaveResult result)
     {
-        if (string.IsNullOrWhiteSpace(result.BackupRelativePath))
-        {
-            return $"Saved {result.RelativePath}.";
-        }
-
-        return $"Saved {result.RelativePath}. Backup: {result.BackupRelativePath}.";
+        return $"Saved {result.RelativePath}.";
     }
 
     private static string BuildOverwriteMessage(TheoryProjectSaveResult result)
