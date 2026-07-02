@@ -25,6 +25,9 @@ body {
 
 body {
   background: linear-gradient(135deg, #151820, var(--start-bg));
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
   color: var(--start-text);
 }
 

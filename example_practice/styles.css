@@ -37,6 +37,9 @@ body {
   min-width: 320px;
   margin: 0;
   background: linear-gradient(135deg, color-mix(in srgb, var(--bg) 88%, white), var(--bg));
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
   color: var(--text);
 }
 

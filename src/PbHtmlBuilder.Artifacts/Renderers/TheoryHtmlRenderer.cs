@@ -231,6 +231,9 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           grid-template-columns: var(--builder-sidebar-width) minmax(0, 1fr);
           grid-template-rows: var(--builder-header-height) minmax(0, 1fr);
           background: linear-gradient(135deg, color-mix(in srgb, #111318 88%, white), #111318);
+          background-attachment: fixed;
+          background-repeat: no-repeat;
+          background-size: cover;
           color: var(--builder-text);
           transition: grid-template-columns 180ms ease;
         }
@@ -391,6 +394,26 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           gap: 8px;
           min-height: 0;
           overflow: hidden auto;
+          scrollbar-color: color-mix(in srgb, var(--builder-muted) 34%, transparent) transparent;
+          scrollbar-gutter: stable;
+          scrollbar-width: thin;
+        }
+
+        .builder-outline::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .builder-outline::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .builder-outline::-webkit-scrollbar-thumb {
+          border-radius: 999px;
+          background: color-mix(in srgb, var(--builder-muted) 34%, transparent);
+        }
+
+        .builder-outline::-webkit-scrollbar-thumb:hover {
+          background: color-mix(in srgb, var(--builder-muted) 52%, transparent);
         }
 
         .builder-sidebar-footer {
@@ -424,14 +447,13 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
         a.builder-outline-item span {
           color: var(--builder-accent);
           font-size: 0.78rem;
-          font-weight: 900;
+          font-weight: 700;
         }
 
         button.builder-outline-item strong,
         a.builder-outline-item strong {
           min-width: 0;
           overflow: hidden;
-          font-size: 0.9rem;
           font-weight: 750;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -532,7 +554,7 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
         }
 
         .builder-section-heading h3 {
-          font-size: 1.32rem;
+          font-size: clamp(1.35rem, 2vw, 2rem);
         }
 
         @media (max-width: 980px) {
