@@ -1,4 +1,5 @@
 @inject TheoryProjectSaveUseCase SaveUseCase
+@inject NavigationManager Navigation
 
 <PageTitle>@ResolvedDocumentTitle - PbHtmlBuilder</PageTitle>
 
@@ -54,12 +55,12 @@
                                        AriaLabel="@($"Добавить секцию перед {FormatSectionNumber(index)}")"
                                        OnInsert="InsertSection" />
 
-                        <button class="builder-outline-item @(index == 0 ? "is-current" : null)"
-                                type="button"
-                                aria-current="@(index == 0 ? "true" : null)">
+                        <a class="builder-outline-item @(index == 0 ? "is-current" : null)"
+                           href="@BuildSectionHref(section)"
+                           aria-current="@(index == 0 ? "true" : null)">
                             <span>@FormatSectionNumber(index)</span>
                             <strong>@section.Title</strong>
-                        </button>
+                        </a>
 
                         @if (isLast)
                         {
@@ -456,6 +457,12 @@
     private static string FormatSectionNumber(int index)
     {
         return (index + 1).ToString("00");
+    }
+
+    private string BuildSectionHref(TheorySection section)
+    {
+        var currentUri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        return $"{currentUri.AbsolutePath}{currentUri.Query}#{Uri.EscapeDataString(section.Id)}";
     }
 
     private sealed record SaveConfirmation(

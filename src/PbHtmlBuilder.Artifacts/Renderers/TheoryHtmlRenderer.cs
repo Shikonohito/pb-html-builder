@@ -403,26 +403,32 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           font-weight: 700;
         }
 
-        .builder-outline-item {
+        button.builder-outline-item,
+        a.builder-outline-item {
           display: grid;
           grid-template-columns: 38px minmax(0, 1fr);
           align-items: center;
+          width: 100%;
           min-height: 46px;
           padding: 8px 10px;
           border: 1px solid transparent;
           border-radius: 8px;
           background: transparent;
           color: var(--builder-muted);
+          cursor: pointer;
           text-align: left;
+          text-decoration: none;
         }
 
-        .builder-outline-item span {
+        button.builder-outline-item span,
+        a.builder-outline-item span {
           color: var(--builder-accent);
           font-size: 0.78rem;
           font-weight: 900;
         }
 
-        .builder-outline-item strong {
+        button.builder-outline-item strong,
+        a.builder-outline-item strong {
           min-width: 0;
           overflow: hidden;
           font-size: 0.9rem;
@@ -431,8 +437,10 @@ public sealed class TheoryHtmlRenderer : ITheoryHtmlRenderer
           white-space: nowrap;
         }
 
-        .builder-outline-item:hover,
-        .builder-outline-item.is-current {
+        button.builder-outline-item:hover,
+        button.builder-outline-item.is-current,
+        a.builder-outline-item:hover,
+        a.builder-outline-item.is-current {
           border-color: var(--builder-line);
           background: var(--builder-surface-strong);
           color: var(--builder-text);
